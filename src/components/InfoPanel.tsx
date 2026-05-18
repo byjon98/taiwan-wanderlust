@@ -155,28 +155,66 @@ export default function InfoPanel() {
   ]);
   const [expandedTransport, setExpandedTransport] = useState<number | null>(null);
 
-  const [checklist, setChecklist] = useState([
+  const defaultChecklist = [
     { id: 1, text: '申请入台证 (Exit & Entry Permit)', checked: true },
     { id: 2, text: '购买旅游保险', checked: true },
     { id: 3, text: '预订桃园机场接送/接驳', checked: false },
     { id: 4, text: '兑换台币/准备外币卡', checked: false },
     { id: 5, text: '下载 Google Maps 离线地图', checked: false }
-  ]);
+  ];
+
+  const [checklist, setChecklist] = useState<{ id: number; text: string; checked: boolean }[]>(() => {
+    try {
+      const saved = localStorage.getItem('taiwan_trip_checklist_v1');
+      return saved ? JSON.parse(saved) : defaultChecklist;
+    } catch {
+      return defaultChecklist;
+    }
+  });
+  const [checklistHistory, setChecklistHistory] = useState<typeof checklist[]>([]);
+  const [checklistFuture, setChecklistFuture] = useState<typeof checklist[]>([]);
   const [newItem, setNewItem] = useState('');
 
+  // Persist checklist to localStorage
+  useEffect(() => {
+    localStorage.setItem('taiwan_trip_checklist_v1', JSON.stringify(checklist));
+  }, [checklist]);
+
+  const updateChecklistWithHistory = (newList: typeof checklist) => {
+    setChecklistHistory(prev => [...prev.slice(-49), checklist]);
+    setChecklistFuture([]);
+    setChecklist(newList);
+  };
+
+  const undoChecklist = () => {
+    if (checklistHistory.length === 0) return;
+    const previous = checklistHistory[checklistHistory.length - 1];
+    setChecklistFuture(prev => [checklist, ...prev]);
+    setChecklistHistory(prev => prev.slice(0, -1));
+    setChecklist(previous);
+  };
+
+  const redoChecklist = () => {
+    if (checklistFuture.length === 0) return;
+    const next = checklistFuture[0];
+    setChecklistHistory(prev => [...prev, checklist]);
+    setChecklistFuture(prev => prev.slice(1));
+    setChecklist(next);
+  };
+
   const toggleCheck = (id: number) => {
-    setChecklist(prev => prev.map(item => item.id === id ? { ...item, checked: !item.checked } : item));
+    updateChecklistWithHistory(checklist.map(item => item.id === id ? { ...item, checked: !item.checked } : item));
   };
 
   const addItem = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && newItem.trim()) {
-      setChecklist(prev => [...prev, { id: Date.now(), text: newItem, checked: false }]);
+      updateChecklistWithHistory([...checklist, { id: Date.now(), text: newItem.trim(), checked: false }]);
       setNewItem('');
     }
   };
 
   const deleteItem = (id: number) => {
-    setChecklist(prev => prev.filter(item => item.id !== id));
+    updateChecklistWithHistory(checklist.filter(item => item.id !== id));
   };
 
   // Map icons back to the modules
@@ -362,9 +400,37 @@ export default function InfoPanel() {
 
           {/* Checklist */}
           <section className="pb-4">
-            <h3 className="font-bold text-xl mb-3 text-gray-800">
-              ☑️ 备选清单
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold text-xl text-gray-800">☑️ 备选清单</h3>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={undoChecklist}
+                  disabled={checklistHistory.length === 0}
+                  title="撤销"
+                  className={cn(
+                    "flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-bold transition-all border",
+                    checklistHistory.length === 0
+                      ? "bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed"
+                      : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-800"
+                  )}
+                >
+                  <Undo2 className="w-3 h-3" /> 撤销
+                </button>
+                <button
+                  onClick={redoChecklist}
+                  disabled={checklistFuture.length === 0}
+                  title="重做"
+                  className={cn(
+                    "flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-bold transition-all border",
+                    checklistFuture.length === 0
+                      ? "bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed"
+                      : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-800"
+                  )}
+                >
+                  <Redo2 className="w-3 h-3" /> 重做
+                </button>
+              </div>
+            </div>
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
               <ul className="text-sm font-medium space-y-4">
                 {checklist.map(item => (

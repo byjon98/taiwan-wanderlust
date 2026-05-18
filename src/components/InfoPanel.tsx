@@ -145,7 +145,38 @@ export default function InfoPanel() {
   const [expandedFlight, setExpandedFlight] = useState<number | null>(null);
 
   const [accommodations] = useState([
-    { n: 'CitizenM Taipei North Gate', d: '2024.05.20 - 05.25 (5晚)', loc: '台北市中正区中华路一段3号', app: 'CitizenM Taipei North Gate', color: '#E74C3C' }
+    {
+      n: '台中東旅 Hotel East Taichung',
+      d: '5/23 (Sat) – 5/25 (Mon) · 2晚',
+      loc: 'No. 201, Section 1, Taiwan Blvd, Central District, Taichung City 400',
+      app: 'Hotel East Taichung',
+      gq: 'Hotel East Taichung Taiwan Blvd Taichung',
+      color: '#E17055'
+    },
+    {
+      n: '日月潭 伊達邵渡假旅店',
+      d: '5/25 (Mon) – 5/26 (Tue) · 1晚',
+      loc: 'No. 270, Zhongzheng Rd, Yuchi Township, Nantou County 555',
+      app: '伊達邵渡假旅店 日月潭',
+      gq: '伊達邵渡假旅店 Yuchi Nantou',
+      color: '#00B894'
+    },
+    {
+      n: 'City Suites Beimen (北门)',
+      d: '5/26 (Tue) – 5/31 (Sun) · 5晚',
+      loc: 'No. 265, Chang\'an W Rd, Datong District, Taipei City 103',
+      app: 'City Suites Beimen Taipei',
+      gq: 'City Suites Beimen Taipei Chang an W Rd',
+      color: '#6C5CE7'
+    },
+    {
+      n: 'City Suites Taoyuan Gateway',
+      d: '5/31 (Sun) – 6/1 (Mon) · 1晚',
+      loc: 'No. 442, Zhongzheng E Rd, Dayuan District, Taoyuan City 337',
+      app: 'City Suites Taoyuan Gateway',
+      gq: 'City Suites Taoyuan Gateway Dayuan',
+      color: '#0984E3'
+    }
   ]);
 
   const [transports] = useState([
@@ -357,7 +388,7 @@ export default function InfoPanel() {
                       <a href={`https://maps.apple.com/?q=${encodeURIComponent(h.app)}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-blue-600 font-medium text-xs hover:underline bg-blue-50 px-2 py-1 rounded-md">
                         🍎 Apple Maps
                       </a>
-                      <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(h.app)}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-green-600 font-medium text-xs hover:underline bg-green-50 px-2 py-1 rounded-md">
+                      <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((h as any).gq || h.app)}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-green-600 font-medium text-xs hover:underline bg-green-50 px-2 py-1 rounded-md">
                         <Navigation className="w-3 h-3" /> Google Maps
                       </a>
                     </div>

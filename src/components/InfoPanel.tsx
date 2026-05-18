@@ -151,7 +151,14 @@ export default function InfoPanel() {
       loc: 'No. 201, Section 1, Taiwan Blvd, Central District, Taichung City 400',
       app: 'Hotel East Taichung',
       gq: 'Hotel East Taichung Taiwan Blvd Taichung',
-      color: '#E17055'
+      color: '#E17055',
+      checkIn: '15:00', checkOut: '12:00',
+      breakfast: '✅ 含早餐 + 下午茶 + 宵夜，一晚三餐全包！',
+      facilities: '免费 Wi-Fi · 24H 前台 · 电梯 · 饮水机 · 合作按摩服务',
+      laundry: '✅ 自助洗衣机（收费）',
+      luggage: '✅ 可免费寄存',
+      review: '地点超好，走路到宫原眼科和夜市超近。房间偏小隔音一般，但含早餐+宵夜性价比极高，是台中最受好评的商务旅店之一。',
+      tips: '入住就享用！一晚三餐都含。房间小是正常的，主要用来睡觉。建议备耳塞。'
     },
     {
       n: '日月潭 伊達邵渡假旅店',
@@ -159,15 +166,29 @@ export default function InfoPanel() {
       loc: 'No. 270, Zhongzheng Rd, Yuchi Township, Nantou County 555',
       app: '伊達邵渡假旅店 日月潭',
       gq: '伊達邵渡假旅店 Yuchi Nantou',
-      color: '#00B894'
+      color: '#00B894',
+      checkIn: '16:00', checkOut: '11:00',
+      breakfast: '✅ 含早餐（中西式：稀饭 / 炒蛋 / 吐司 / 果汁）',
+      facilities: '免费 Wi-Fi · 电梯 · 冰箱 · 热水壶 · 电视 · 饮水机 · 微波炉',
+      laundry: '⚠️ 未明确提供，建议出发前确认',
+      luggage: '✅ 可免费寄存，退房后游码头不用拖行李',
+      review: '步行 2 分钟到伊达邵码头和老街。采智能自助入住，无传统柜台。房间有原住民风格装潢，部分房型有阳台可看景。',
+      tips: '⚠️ 智能入住！务必提前看入住说明。台湾环保政策不提供牙刷牙膏，请自备！退房后行李可寄存再去搭船游湖。'
     },
     {
       n: 'City Suites Beimen (北门)',
       d: '5/26 (Tue) – 5/31 (Sun) · 5晚',
-      loc: 'No. 265, Chang\'an W Rd, Datong District, Taipei City 103',
+      loc: "No. 265, Chang'an W Rd, Datong District, Taipei City 103",
       app: 'City Suites Beimen Taipei',
       gq: 'City Suites Beimen Taipei Chang an W Rd',
-      color: '#6C5CE7'
+      color: '#6C5CE7',
+      checkIn: '15:00', checkOut: '11:00',
+      breakfast: '❌ 无早餐。楼下 7-11，对面全家，方便解决',
+      facilities: '免费 Wi-Fi · 24H 前台 · 电梯 · 房内保险箱 · 无障碍设施',
+      laundry: '✅ 提供洗衣服务',
+      luggage: '✅ 可免费寄存，适合早到或晚退房',
+      review: '台北五晚大本营。地点绝佳：步行 4 分钟北门捷运站，8-15 分钟台北车站，宁夏夜市和大稻埕超近。房间偏小部分无窗，但市中心这价位很值。',
+      tips: '最靠近机场捷运（北门站），从这里去桃园机场最方便！不提供一次性备品（环保政策），请自带洗漱用品。'
     },
     {
       n: 'City Suites Taoyuan Gateway',
@@ -175,9 +196,17 @@ export default function InfoPanel() {
       loc: 'No. 442, Zhongzheng E Rd, Dayuan District, Taoyuan City 337',
       app: 'City Suites Taoyuan Gateway',
       gq: 'City Suites Taoyuan Gateway Dayuan',
-      color: '#0984E3'
+      color: '#0984E3',
+      checkIn: '15:00', checkOut: '11:00',
+      breakfast: '✅ 含早餐自助吧 06:30–10:00。极早出发可前晚请前台预备早餐盒（三明治+饮料）',
+      facilities: '免费 Wi-Fi · 24H 前台 · 电梯 · 冰箱 · 电视 · 茶/咖啡机 · 自动贩卖机 · 餐厅',
+      laundry: '✅ 投币式洗衣机',
+      luggage: '✅ 可免费寄存',
+      review: '专为最后一晚设计的完美落脚点。离桃园机场约 15 分钟，叫计程车约 NT$200。步行 8-10 分钟大园捷运站。部分房间有飞机起降视野！',
+      tips: '⚠️ 最后一晚！前一晚请前台预约 06:30 计程车（T1 或 T2 说清楚）。飞机迷可要求飞机视野房。周边便利店不多，提前备好零食。'
     }
   ]);
+  const [expandedHotel, setExpandedHotel] = useState<number | null>(null);
 
   const [transports] = useState([
     { id: 1, title: '桃园机场捷运 (Airport MRT)', brief: '直达车 35分钟到达台北车站', detail: '紫色车厢为直达车，蓝色为普通车。直达车中间不停站，是进入市区最快的方式。', icon: '🚇' },
@@ -373,32 +402,79 @@ export default function InfoPanel() {
             <h3 className="font-bold text-xl mb-3 flex items-center gap-2 text-gray-800">
               📍 住宿安排
             </h3>
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-5">
-              {accommodations.map((h, i) => (
-                <React.Fragment key={h.n}>
-                  {i > 0 && <div className="h-px bg-gray-100 w-full" />}
-                  <div>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: h.color }} />
-                      <div className="text-xs font-semibold text-gray-600 tracking-wide">{h.d}</div>
+            <div className="space-y-3">
+              {accommodations.map((h, i) => {
+                const hx = h as any;
+                const isOpen = expandedHotel === i;
+                return (
+                  <div
+                    key={h.n}
+                    className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer"
+                    onClick={() => setExpandedHotel(isOpen ? null : i)}
+                  >
+                    <div className="p-4 flex items-start gap-3">
+                      <div className="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: h.color }} />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-0.5">{h.d}</div>
+                        <div className="text-base font-black text-gray-800 leading-tight">{h.n}</div>
+                        <div className="text-xs text-gray-400 mt-1.5 flex items-center gap-2 flex-wrap">
+                          <span className="bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-lg font-bold">入住 {hx.checkIn}</span>
+                          <span className="bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-lg font-bold">退房 {hx.checkOut}</span>
+                        </div>
+                      </div>
+                      <div className={cn("text-gray-300 transition-transform duration-300 flex-shrink-0 mt-1", isOpen ? "rotate-180" : "")}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m6 9 6 6 6-6"/></svg>
+                      </div>
                     </div>
-                    <div className="text-base font-bold text-gray-800 mb-1">{h.n}</div>
-                    <div className="text-sm text-gray-500 mb-3">{h.loc}</div>
-                    <div className="flex gap-4">
-                      <a href={`https://maps.apple.com/?q=${encodeURIComponent(h.app)}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-blue-600 font-medium text-xs hover:underline bg-blue-50 px-2 py-1 rounded-md">
-                        🍎 Apple Maps
-                      </a>
-                      <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((h as any).gq || h.app)}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-green-600 font-medium text-xs hover:underline bg-green-50 px-2 py-1 rounded-md">
-                        <Navigation className="w-3 h-3" /> Google Maps
-                      </a>
-                    </div>
+                    {isOpen && (
+                      <div className="px-4 pb-4 border-t border-gray-100 animate-in slide-in-from-top-2 duration-200">
+                        <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs mb-4">
+                          <div className="bg-gray-50 p-3 rounded-xl">
+                            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">🍳 早餐</div>
+                            <p className="text-gray-700 font-medium leading-relaxed">{hx.breakfast}</p>
+                          </div>
+                          <div className="bg-gray-50 p-3 rounded-xl">
+                            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">🧺 洗衣</div>
+                            <p className="text-gray-700 font-medium leading-relaxed">{hx.laundry}</p>
+                          </div>
+                          <div className="bg-gray-50 p-3 rounded-xl">
+                            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">🧳 行李寄存</div>
+                            <p className="text-gray-700 font-medium leading-relaxed">{hx.luggage}</p>
+                          </div>
+                          <div className="bg-gray-50 p-3 rounded-xl">
+                            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">🏨 设施</div>
+                            <p className="text-gray-700 font-medium leading-relaxed">{hx.facilities}</p>
+                          </div>
+                          <div className="col-span-full bg-amber-50 border border-amber-100 p-3 rounded-xl">
+                            <div className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">⭐ 网友评价</div>
+                            <p className="text-amber-900 font-medium leading-relaxed italic">{hx.review}</p>
+                          </div>
+                          <div className="col-span-full bg-blue-50 border border-blue-100 p-3 rounded-xl">
+                            <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">💡 Tips</div>
+                            <p className="text-blue-900 font-medium leading-relaxed">{hx.tips}</p>
+                          </div>
+                          <div className="col-span-full text-[10px] text-gray-400 px-1">{h.loc}</div>
+                        </div>
+                        <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                          <a href={`https://maps.apple.com/?q=${encodeURIComponent(h.app)}`} target="_blank" rel="noreferrer"
+                            className="flex items-center gap-1.5 text-blue-600 font-bold text-xs hover:underline bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100">
+                            🍎 Apple Maps
+                          </a>
+                          <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hx.gq || h.app)}`} target="_blank" rel="noreferrer"
+                            className="flex items-center gap-1.5 text-green-600 font-bold text-xs hover:underline bg-green-50 px-3 py-1.5 rounded-xl border border-green-100">
+                            <Navigation className="w-3 h-3" /> Google Maps
+                          </a>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </React.Fragment>
-              ))}
+                );
+              })}
             </div>
           </section>
-          
+
           {/* Transportation */}
+
           <section>
             <h3 className="font-bold text-xl mb-3 flex items-center gap-2 text-gray-800">
               <Train className="w-5 h-5" /> 交通连接

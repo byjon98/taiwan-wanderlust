@@ -250,42 +250,59 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
   const [searchResults, setSearchResults] = useState<string[]>([]);
   const [searchIndex, setSearchIndex] = useState(0);
 
-  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      let matchedId = '';
-      
-      for (let dIdx = 0; dIdx < itineraryDays.length; dIdx++) {
-        const day = itineraryDays[dIdx];
-        if (day.title?.toLowerCase().includes(q) || `day ${day.day}`.includes(q)) {
-          matchedId = `day-${dIdx}`;
-          break;
-        }
-        const items = day.items || [];
-        for (let iIdx = 0; iIdx < items.length; iIdx++) {
-          if (items[iIdx].name?.toLowerCase().includes(q)) {
-            // Need to expand the day or item?
-            matchedId = `item-${dIdx}-${iIdx}`;
-            break;
-          }
-        }
-        if (matchedId) break;
+  // Perform search and build results array
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setSearchIndex(0);
+      return;
+    }
+    const q = searchQuery.toLowerCase().trim();
+    const results: string[] = [];
+    
+    for (let dIdx = 0; dIdx < itineraryDays.length; dIdx++) {
+      const day = itineraryDays[dIdx];
+      if (day.title?.toLowerCase().includes(q) || `day ${day.day}`.includes(q)) {
+        results.push(`day-${dIdx}`);
       }
-      
-      if (matchedId) {
-        const el = document.getElementById(matchedId);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          el.classList.add('ring-4', 'ring-indigo-500', 'ring-opacity-50', 'transition-all');
-          setTimeout(() => el.classList.remove('ring-4', 'ring-indigo-500', 'ring-opacity-50'), 2000);
-          
-          if (matchedId.startsWith('item-')) {
-             setExpandedItems(prev => prev[matchedId] ? prev : { [matchedId]: true });
-          }
-        } else {
-          // Element might not be rendered yet if virtualization is used, but here we render everything.
+      const items = day.items || [];
+      for (let iIdx = 0; iIdx < items.length; iIdx++) {
+        if (items[iIdx].name?.toLowerCase().includes(q) || items[iIdx].desc?.toLowerCase().includes(q)) {
+          results.push(`item-${dIdx}-${iIdx}`);
         }
+      }
+    }
+    setSearchResults(results);
+    setSearchIndex(0);
+  }, [searchQuery, itineraryDays]);
+
+  const scrollToResult = (idx: number) => {
+    if (searchResults.length === 0) return;
+    const targetIdx = (idx + searchResults.length) % searchResults.length;
+    setSearchIndex(targetIdx);
+    
+    const matchedId = searchResults[targetIdx];
+    const el = document.getElementById(matchedId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('ring-4', 'ring-indigo-500', 'ring-opacity-50', 'transition-all');
+      setTimeout(() => el.classList.remove('ring-4', 'ring-indigo-500', 'ring-opacity-50'), 2000);
+      
+      if (matchedId.startsWith('item-')) {
+        const parts = matchedId.split('-');
+        setExpandedItems(prev => prev[matchedId] ? prev : { ...prev, [matchedId]: true });
+        setExpandedDays(prev => prev[parts[1]] ? prev : { ...prev, [parts[1]]: true });
       } else {
+        setExpandedDays(prev => prev[matchedId.split('-')[1]] ? prev : { ...prev, [matchedId.split('-')[1]]: true });
+      }
+    }
+  };
+
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      if (searchResults.length > 0) {
+        scrollToResult(searchIndex + 1);
+      } else if (searchQuery.trim()) {
         alert('未找到相关行程，请尝试其他关键词');
       }
     }

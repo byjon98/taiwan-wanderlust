@@ -120,25 +120,37 @@ const defaultItinerary = [
     },
     {
       day: 5,
-      title: "淡水夕阳 & 士林夜市",
+      title: "淡水老街夕阳突击 + 士林夜市大轰炸",
       date: "5/27 (Wed)",
       items: [
-        { time: "11:00", name: "淡水老街 (文化阿给、许义鱼酥)", type: "food" },
-        { time: "14:00", name: "渔人码头 ＆ 情人桥", type: "spot" },
-        { time: "16:00", name: "麻吉奶奶鲜奶麻糬 & 朝日夫妇", type: "food" },
-        { time: "18:00", name: "士林夜市 (无骨鸡腿排、胡椒饼)", type: "food" }
+        { time: "11:00", name: "大稻埕鲁肉饭 或 味鼎蛋饼 (早午餐抉择)", type: "food" },
+        { time: "13:00", name: "搭乘捷运红线直达淡水", type: "transport" },
+        { time: "14:30", name: "文化阿给 & 许义鱼酥 (战备口粮)", type: "food" },
+        { time: "15:30", name: "麻吉奶奶鲜奶麻糬 或 福哥石头饼", type: "food" },
+        { time: "16:30", name: "搭乘交通船直达渔人码头", type: "transport" },
+        { time: "17:00", name: "渔人码头日落 或 朝日夫妇刨冰", type: "spot" },
+        { time: "19:00", name: "搭乘红线回撤至剑潭站", type: "transport" },
+        { time: "19:40", name: "士林夜市 (无骨鸡腿排/胡椒饼/生煎包)", type: "food" },
+        { time: "20:30", name: "士林夜市 (家乡炭烤鸡排/胖老爹)", type: "food" },
+        { time: "21:30", name: "士林夜市 (海友十全药炖排骨/辛发亭)", type: "food" },
+        { time: "22:30", name: "搭捷运返回北门大本营", type: "transport" }
       ]
     },
     {
       day: 6,
-      title: "九份山城 & 基隆庙口",
+      title: "九份山城攻略 + 基隆庙口大环线",
       date: "5/28 (Thu)",
       items: [
-        { time: "13:00", name: "搭乘 965 路巴士前往九份", type: "transport" },
-        { time: "14:30", name: "九份老街 (阿柑姨、啊珠、金枝)", type: "food" },
-        { time: "16:30", name: "九份茶坊 / 阿妹茶楼 (下午茶)", type: "spot" },
-        { time: "18:30", name: "搭乘 788 路巴士前往基隆", type: "transport" },
-        { time: "19:30", name: "基隆庙口 营养三明治 (螃蟹羹)", type: "food" }
+        { time: "11:00", name: "北门休整 或 金狮楼港式早午餐", type: "food" },
+        { time: "14:00", name: "搭乘 965 路快速巴士直达九份", type: "transport" },
+        { time: "15:30", name: "阿柑姨芋圆 (无敌海景座位)", type: "food" },
+        { time: "16:30", name: "九份扫荡 (红糟肉圆/花生卷冰淇淋/鱼丸伯仔)", type: "food" },
+        { time: "17:30", name: "阿妹茶楼 (海悦楼取景) & 买护理长卤味", type: "spot" },
+        { time: "18:40", name: "搭乘 788 路客运前往基隆港", type: "transport" },
+        { time: "19:40", name: "基隆庙口 (营养三明治/吴记螃蟹羹)", type: "food" },
+        { time: "21:00", name: "基隆庙口 (天一香/纪家猪脚/泡泡冰)", type: "food" },
+        { time: "22:30", name: "搭乘台铁区间快车撤离基隆", type: "transport" },
+        { time: "23:20", name: "抵达台北车站，搭 Uber 回饭店", type: "transport" }
       ]
     },
     {
@@ -202,7 +214,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
   const [isEditing, setIsEditing] = useState(false);
   const [itineraryDays, setItineraryDays] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('taiwan_trip_itinerary_v3');
+      const saved = localStorage.getItem('taiwan_trip_itinerary_v4');
       return saved ? JSON.parse(saved) : defaultItinerary;
     } catch {
       return defaultItinerary;
@@ -212,7 +224,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
   const [future, setFuture] = useState<any[][]>([]);
 
   React.useEffect(() => {
-    localStorage.setItem('taiwan_trip_itinerary_v3', JSON.stringify(itineraryDays));
+    localStorage.setItem('taiwan_trip_itinerary_v4', JSON.stringify(itineraryDays));
   }, [itineraryDays]);
 
   // --- UNDO / REDO ---

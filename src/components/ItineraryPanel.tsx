@@ -663,12 +663,23 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
       </div>
 
       {isEditing && (
-        <div className="mt-8">
+        <div className="mt-8 space-y-4">
           <button 
             onClick={addDay} 
             className="w-full py-4 bg-white border border-gray-200 shadow-sm rounded-2xl text-[#2D3436] font-black text-lg hover:border-[#2D3436] hover:shadow-md transition-all flex items-center justify-center gap-2"
           >
             <Plus className="w-5 h-5" /> 增加一天 (Add Day)
+          </button>
+          
+          <button 
+            onClick={() => {
+              if(window.confirm('警告：此操作将清空您所有的手动修改，并恢复为系统最新定夺的默认行程。确定要继续吗？')) {
+                setItineraryDays(JSON.parse(JSON.stringify(defaultItinerary)));
+              }
+            }}
+            className="w-full py-3 bg-red-50 border border-red-100 text-red-500 font-bold rounded-xl hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-2 text-sm"
+          >
+            <AlertTriangle className="w-4 h-4" /> 恢复系统默认行程
           </button>
         </div>
       )}

@@ -249,12 +249,13 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
       
       for (let dIdx = 0; dIdx < itineraryDays.length; dIdx++) {
         const day = itineraryDays[dIdx];
-        if (day.title.toLowerCase().includes(q) || `day ${day.day}`.includes(q)) {
+        if (day.title?.toLowerCase().includes(q) || `day ${day.day}`.includes(q)) {
           matchedId = `day-${dIdx}`;
           break;
         }
-        for (let iIdx = 0; iIdx < day.items.length; iIdx++) {
-          if (day.items[iIdx].name.toLowerCase().includes(q)) {
+        const items = day.items || [];
+        for (let iIdx = 0; iIdx < items.length; iIdx++) {
+          if (items[iIdx].name?.toLowerCase().includes(q)) {
             // Need to expand the day or item?
             matchedId = `item-${dIdx}-${iIdx}`;
             break;
@@ -384,8 +385,9 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
       const groups: { regionId: string | null; regionName: string | null; items: any[]; nearby: any[] }[] = [];
       let currentGroup: { regionId: string | null; regionName: string | null; items: any[]; nearby: any[] } | null = null;
 
-      day.items.forEach((item: any, originalIndex: number) => {
-        const matched = findLocationByName(item.name);
+      const items = day.items || [];
+      items.forEach((item: any, originalIndex: number) => {
+        const matched = findLocationByName(item.name || '');
         const regionId = matched?.regionId || null;
         const regionName = matched?.regionName || null;
 

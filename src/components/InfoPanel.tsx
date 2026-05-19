@@ -385,7 +385,7 @@ export default function InfoPanel() {
                   <div className="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full tracking-widest uppercase">Etiqa</div>
                 </div>
                 <div className="text-sm font-medium text-red-800">
-                  <span className="opacity-70">受保人:</span> PANG EN SZE
+                  <span className="opacity-70">受保人:</span> PANG EN SZE, LOH ZI JIA
                 </div>
                 <div className="text-sm font-medium text-red-800">
                   <span className="opacity-70">保单号:</span> PU582185

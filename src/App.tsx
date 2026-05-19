@@ -522,12 +522,12 @@ export default function App() {
           <button 
             onClick={() => setActiveTab(activeTab === 'expense' ? 'explore' : 'expense')}
             className={cn(
-              "hidden md:flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm",
+              "px-3 py-1.5 rounded-full border font-bold text-[11px] transition-colors shadow-sm",
               activeTab === 'expense' ? "bg-[#2D3436] text-white border-[#2D3436]" : "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50"
             )}
           >
-            <Wallet className="w-4 h-4" />
-            <span>财务</span>
+            <Wallet className="w-3.5 h-3.5 inline-block mr-1" />
+            财务
           </button>
         </div>
       </header>

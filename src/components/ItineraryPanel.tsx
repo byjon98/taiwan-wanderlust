@@ -202,7 +202,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
   const [isEditing, setIsEditing] = useState(false);
   const [itineraryDays, setItineraryDays] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('taiwan_trip_itinerary_v2');
+      const saved = localStorage.getItem('taiwan_trip_itinerary_v3');
       return saved ? JSON.parse(saved) : defaultItinerary;
     } catch {
       return defaultItinerary;
@@ -212,7 +212,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
   const [future, setFuture] = useState<any[][]>([]);
 
   React.useEffect(() => {
-    localStorage.setItem('taiwan_trip_itinerary_v2', JSON.stringify(itineraryDays));
+    localStorage.setItem('taiwan_trip_itinerary_v3', JSON.stringify(itineraryDays));
   }, [itineraryDays]);
 
   // --- UNDO / REDO ---

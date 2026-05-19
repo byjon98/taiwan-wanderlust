@@ -43,6 +43,12 @@ export default function ExpensePanel() {
 
   // Initialize
   useEffect(() => {
+    const handleOpenFab = () => setIsFabOpen(true);
+    window.addEventListener('open-expense-fab', handleOpenFab);
+    return () => window.removeEventListener('open-expense-fab', handleOpenFab);
+  }, []);
+
+  useEffect(() => {
     const saved = localStorage.getItem('taiwan_trip_expenses_v3');
     if (saved) {
       try {
@@ -532,24 +538,7 @@ export default function ExpensePanel() {
             </div>
             
             {/* Tag Spending Summary */}
-            <div className="pt-4">
-              <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3">全类目花销汇总</h3>
-              <div className="grid grid-cols-2 gap-3">
-                {CATEGORIES.flatMap(g => g.items).map(cat => {
-                  const valTwd = stats.categoryTotals[cat.id] || 0;
-                  const valMyr = valTwd * exchangeRate;
-                  return (
-                    <div key={cat.id} className="bg-gray-50 p-3 rounded-xl border border-gray-100 flex flex-col justify-between">
-                      <div className="text-[10px] font-bold text-gray-500 mb-2">{cat.icon} {cat.label}</div>
-                      <div>
-                        <div className="text-sm font-black text-gray-800">NT$ {valTwd.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
-                        <div className="text-[9px] font-bold text-gray-400">MYR {valMyr.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+
 
           </div>
         )}
@@ -590,29 +579,33 @@ export default function ExpensePanel() {
               {filteredExpenses.length === 0 ? (
                 <div className="text-center py-10 text-gray-400 text-sm font-bold">无匹配记录</div>
               ) : filteredExpenses.map(e => (
-                <div key={e.id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-lg shrink-0 border border-gray-100">
-                    {e.isSettlement ? '✅' : e.isTransfer ? '🔄' : getCategoryLabel(e.category).split(' ')[0]}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-bold text-gray-800 text-sm truncate">{e.subject}</div>
-                    <div className="text-[9px] text-gray-400 font-bold mt-1 flex flex-wrap gap-1">
-                      <span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 uppercase">{e.paymentMethod.replace('_', ' ')}</span>
-                      {!e.isTransfer && !e.isSettlement && (
-                        <span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">属于 {e.forJon > 0 && e.forJune > 0 ? '共同' : e.forJon > 0 ? 'Jon' : 'June'}</span>
-                      )}
-                      <span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">Day {e.day}</span>
+                <div key={e.id} className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-lg shrink-0 border border-gray-100">
+                        {e.isSettlement ? '✅' : e.isTransfer ? '🔄' : getCategoryLabel(e.category).split(' ')[0]}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-bold text-gray-800 text-sm truncate">{e.subject}</div>
+                        <div className="text-[9px] text-gray-400 font-bold mt-1 flex flex-wrap gap-1">
+                          <span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 uppercase">{e.paymentMethod.replace('_', ' ')}</span>
+                          {!e.isTransfer && !e.isSettlement && (
+                            <span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">属于 {e.forJon > 0 && e.forJune > 0 ? '共同' : e.forJon > 0 ? 'Jon' : 'June'}</span>
+                          )}
+                          <span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">Day {e.day}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="font-black text-gray-800 text-sm">
+                        {e.currency === 'TWD' ? 'NT$ ' : 'MYR '}
+                        {e.amount.toLocaleString(undefined, {minimumFractionDigits: e.currency === 'MYR' ? 2 : 0})}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <div className="font-black text-gray-800 text-sm">
-                      {e.currency === 'TWD' ? 'NT$ ' : 'MYR '}
-                      {e.amount.toLocaleString(undefined, {minimumFractionDigits: e.currency === 'MYR' ? 2 : 0})}
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    <button onClick={() => handleEdit(e)} className="px-2.5 py-1 text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg ml-2">修改</button>
-                    <button onClick={() => deleteExpense(e.id)} className="p-1.5 hover:bg-gray-100 text-gray-300 hover:text-red-500 rounded-lg ml-1">
+                  <div className="flex justify-end gap-2 border-t border-gray-50 pt-2">
+                    <button onClick={() => handleEdit(e)} className="px-3 py-1 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg text-xs font-bold transition-colors">修改 Edit</button>
+                    <button onClick={() => deleteExpense(e.id)} className="px-2 py-1 bg-gray-50 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-lg flex items-center justify-center transition-colors">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
@@ -694,9 +687,9 @@ export default function ExpensePanel() {
                   const heightPct = Math.min(100, (totalSpent / (budget * 1.5)) * 100);
                   
                   return (
-                    <div key={day} className="flex flex-col items-center flex-1 h-full justify-end group">
-                      <div className="opacity-0 group-hover:opacity-100 text-[9px] font-bold text-gray-800 mb-2 transition-opacity text-center absolute -top-4">
-                        {totalSpent.toLocaleString(undefined, {maximumFractionDigits:0})}
+                    <div key={day} className="flex flex-col items-center flex-1 h-full justify-end group relative">
+                      <div className="text-[9px] font-black text-gray-600 mb-1 text-center -mt-4 whitespace-nowrap">
+                        {totalSpent > 0 ? totalSpent.toLocaleString(undefined, {maximumFractionDigits:0}) : ''}
                       </div>
                       <div className="w-full max-w-[24px] bg-gray-50 rounded-t-md flex flex-col justify-end overflow-hidden relative" style={{ height: '100%' }}>
                         <div className="w-full flex flex-col justify-end" style={{ height: `${heightPct}%` }}>
@@ -723,23 +716,31 @@ export default function ExpensePanel() {
                 </div>
               ))}
             </div>
+
+            <div className="pt-4">
+              <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3">全类目花销汇总</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {CATEGORIES.flatMap(g => g.items).map(cat => {
+                  const valTwd = stats.categoryTotals[cat.id] || 0;
+                  const valMyr = valTwd * exchangeRate;
+                  return (
+                    <div key={cat.id} className="bg-gray-50 p-3 rounded-xl border border-gray-100 flex flex-col justify-between">
+                      <div className="text-[10px] font-bold text-gray-500 mb-2">{cat.icon} {cat.label}</div>
+                      <div>
+                        <div className="text-sm font-black text-gray-800">NT$ {valTwd.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                        <div className="text-[9px] font-bold text-gray-400">MYR {valMyr.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
 
       </div>
 
-      {/* Floating Action Button for Quick Entry (Only on Dashboard) */}
-      {activeTab === 'dashboard' && (
-        <div className="fixed bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white/90 via-white/50 to-transparent pointer-events-none z-40" />
-      )}
-      {activeTab === 'dashboard' && (
-        <button 
-          onClick={() => { setIsFabOpen(true); }}
-          className="fixed lg:absolute bottom-24 lg:bottom-10 left-6 lg:left-10 w-14 h-14 bg-black hover:bg-blue-400 text-white rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.15)] flex items-center justify-center z-50 transition-transform active:scale-95"
-        >
-          <Plus className="w-6 h-6" />
-        </button>
-      )}
+
 
       {/* QUICK ENTRY MODAL */}
       {isFabOpen && (

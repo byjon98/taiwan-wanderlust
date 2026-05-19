@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plane, Train, CheckCircle2, Circle, Navigation, Plus, X, ShoppingBag, Gift, Sparkles, Package, Coffee, Brush, Heart, Footprints, User, Store, Utensils, ChevronRight, ExternalLink, MapPin, Clock, Tag, MessageSquare, Info, Eye, RotateCcw, RotateCw, Trash2, Undo2, Redo2, Smartphone, Cpu } from 'lucide-react';
+import { AlertTriangle, Plane, Train, CheckCircle2, Circle, Navigation, Plus, X, ShoppingBag, Gift, Sparkles, Package, Coffee, Brush, Heart, Footprints, User, Store, Utensils, ChevronRight, ExternalLink, MapPin, Clock, Tag, MessageSquare, Info, Eye, RotateCcw, RotateCw, Trash2, Undo2, Redo2, Smartphone, Cpu } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -372,6 +372,39 @@ export default function InfoPanel() {
 
       {activeTab === 'logistics' && (
         <div className="space-y-8">
+          {/* Insurance & Emergency */}
+          <section className="mb-6">
+            <h3 className="font-bold text-xl mb-3 flex items-center gap-2 text-red-600">
+              <AlertTriangle className="w-5 h-5" /> 紧急保险与救援
+            </h3>
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-red-100 rounded-full blur-2xl transform translate-x-1/3 -translate-y-1/2"></div>
+              <div className="relative z-10 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-red-900 font-bold">TripCare 360 Platinum</div>
+                  <div className="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full tracking-widest uppercase">Etiqa</div>
+                </div>
+                <div className="text-sm font-medium text-red-800">
+                  <span className="opacity-70">受保人:</span> PANG EN SZE
+                </div>
+                <div className="text-sm font-medium text-red-800">
+                  <span className="opacity-70">保单号:</span> PU582185
+                </div>
+                <div className="text-sm font-medium text-red-800">
+                  <span className="opacity-70">承保日期:</span> 2026/05/23 - 2026/06/01
+                </div>
+                <div className="mt-2 pt-3 border-t border-red-200/50">
+                  <div className="text-xs font-bold text-red-900 mb-1 flex items-center gap-1.5">
+                    <Smartphone className="w-4 h-4" /> 24小时全球医疗救援专线
+                  </div>
+                  <a href="tel:+60327856565" className="text-xl font-black text-red-600 flex items-center gap-2 hover:opacity-80 transition-opacity w-fit">
+                    +603 2785 6565
+                  </a>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* Flights */}
           <section>
             <h3 className="font-bold text-xl mb-3 flex items-center gap-2 text-gray-800">

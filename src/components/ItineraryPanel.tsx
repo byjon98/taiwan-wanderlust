@@ -218,7 +218,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
 
   const toggleExpand = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    setExpandedItems(prev => ({ ...prev, [id]: !prev[id] }));
+    setExpandedItems(prev => prev[id] ? {} : { [id]: true });
   };
 
   // --- STATE & PERSISTENCE ---
@@ -240,6 +240,29 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
   });
   const [history, setHistory] = useState<any[][]>([]);
   const [future, setFuture] = useState<any[][]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredDays = React.useMemo(() => {
+    if (!searchQuery.trim()) return itineraryDays;
+    const q = searchQuery.toLowerCase().trim();
+    
+    return itineraryDays.map(day => {
+      // If the day title or "day X" matches, return the whole day
+      if (day.title.toLowerCase().includes(q) || `day ${day.day}`.includes(q)) {
+        return day;
+      }
+      
+      // Otherwise, filter items within the day
+      const matchedItems = day.items.filter((item: any) => 
+        item.name.toLowerCase().includes(q)
+      );
+      
+      if (matchedItems.length > 0) {
+        return { ...day, items: matchedItems };
+      }
+      return null;
+    }).filter(Boolean);
+  }, [itineraryDays, searchQuery]);
 
   React.useEffect(() => {
     localStorage.setItem('taiwan_trip_itinerary_v7', JSON.stringify(itineraryDays));
@@ -339,7 +362,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
   };
 
   const itineraryByDay = React.useMemo(() => {
-    return itineraryDays.map(day => {
+    return filteredDays.map(day => {
       const groups: { regionId: string | null; regionName: string | null; items: any[]; nearby: any[] }[] = [];
       let currentGroup: { regionId: string | null; regionName: string | null; items: any[]; nearby: any[] } | null = null;
 
@@ -363,62 +386,90 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
 
       return { ...day, groups };
     });
-  }, [itineraryDays]);
+  }, [filteredDays]);
 
   return (
     <div className="text-gray-800 space-y-6 pb-10 w-full animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h3 className="font-black text-2xl flex items-center gap-2 text-[#2D3436] tracking-tight">
-          <Calendar className="w-6 h-6 text-[#2D3436]" /> 智能互动行程
-        </h3>
-        
-        {/* Editor Controls */}
-        <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-100">
-          <button 
-            onClick={handleUndo} 
-            disabled={history.length === 0}
-            className="p-2 rounded-lg text-gray-500 hover:bg-white hover:text-gray-800 disabled:opacity-30 transition-all shadow-sm disabled:shadow-none"
-            title="撤销 (Undo)"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
-          </button>
-          <button 
-            onClick={handleRedo} 
-            disabled={future.length === 0}
-            className="p-2 rounded-lg text-gray-500 hover:bg-white hover:text-gray-800 disabled:opacity-30 transition-all shadow-sm disabled:shadow-none"
-            title="重做 (Redo)"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
-          </button>
-          <div className="w-px h-6 bg-gray-200 mx-1"></div>
+      <div className="flex flex-col gap-3 mb-8">
+        <div className="flex items-center justify-between">
+          <div className="flex gap-2">
+            {!isEditing && (
+              <button 
+                onClick={handleUndo}
+                disabled={history.length === 0}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border",
+                  history.length > 0 
+                    ? "bg-white text-gray-700 border-gray-200 hover:border-gray-300 shadow-sm" 
+                    : "bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed"
+                )}
+              >
+                <Undo2 className="w-3.5 h-3.5" />
+                <span>撤销</span>
+              </button>
+            )}
+            {!isEditing && (
+              <button 
+                onClick={handleRedo}
+                disabled={future.length === 0}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border",
+                  future.length > 0 
+                    ? "bg-white text-gray-700 border-gray-200 hover:border-gray-300 shadow-sm" 
+                    : "bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed"
+                )}
+              >
+                <Redo2 className="w-3.5 h-3.5" />
+                <span>重做</span>
+              </button>
+            )}
+          </div>
           <button 
             onClick={() => setIsEditing(!isEditing)}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm",
-              isEditing ? "bg-indigo-600 text-white" : "bg-white text-gray-700 hover:bg-gray-50"
+              "flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all",
+              isEditing ? "bg-indigo-600 text-white shadow-md hover:bg-indigo-700" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             )}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+            {isEditing ? <CheckCircle2 className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
             {isEditing ? '完成编辑' : '编辑行程'}
           </button>
         </div>
-      </div>
 
-      <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-xl mb-6 flex items-start gap-4">
-        <div className="bg-indigo-600 p-2 rounded-lg text-white shadow-md">
-          <Sparkles className="w-5 h-5" />
-        </div>
-        <p className="text-indigo-900 text-sm font-medium leading-relaxed">
-          已为您将<strong>「每日计划」</strong>与其所在的<strong>「地区周边攻略」</strong>完美结合。
-          <br />
-          <span className="text-xs text-indigo-600 font-normal">下滑查看每日详情，系统会自动探测你该日所在的区域并推荐热门地点。</span>
-        </p>
+        {!isEditing && (
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+            </div>
+            <input
+              type="text"
+              placeholder="搜索天数 (如 Day 3) 或地点 (如 淡水)..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="block w-full pl-10 pr-10 py-3 bg-gray-50 border-gray-100 focus:bg-white rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-[#2D3436] placeholder-gray-400"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-4 flex items-center"
+              >
+                <div className="bg-gray-200 hover:bg-gray-300 rounded-full p-1 transition-colors">
+                  <X className="h-3 w-3 text-gray-500" />
+                </div>
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="space-y-12">
-        {itineraryByDay.map((day, dIdx) => (
+        {itineraryByDay.length === 0 ? (
+          <div className="text-center py-12 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+            <span className="text-4xl mb-3 block">🕵️‍♂️</span>
+            <p className="text-gray-500 font-bold">没有找到匹配的行程</p>
+          </div>
+        ) : itineraryByDay.map((day, dIdx) => (
           <div key={dIdx} className="relative">
-            {/* Day Header */}
             <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl py-4 mb-6 flex items-center gap-4 border-b border-gray-100">
               <div className="bg-[#2D3436] text-white w-12 h-12 rounded-2xl flex flex-col items-center justify-center flex-shrink-0 shadow-xl shadow-[#2D3436]/20">
                 <span className="text-[10px] font-black opacity-60 leading-none">DAY</span>
@@ -460,11 +511,9 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
               </div>
             </div>
 
-            {/* Region Groups */}
             <div className="space-y-8 pl-4 sm:pl-6">
               {day.groups.map((group, gIdx) => (
                 <div key={gIdx} className="relative">
-                  {/* Vertical Line */}
                   <div className="absolute left-[-17px] top-6 bottom-[-32px] w-0.5 bg-gray-100" />
                   
                   {group.regionName && (
@@ -479,7 +528,6 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
                       const actualIdx = item.originalIndex;
                       return (
                       <div key={iIdx} className="relative flex flex-col sm:flex-row sm:items-center gap-2">
-                        {/* Dot */}
                         <div className="absolute left-[-22px] top-1.5 w-3 h-3 rounded-full bg-white border-2 border-[#2D3436] z-10" />
                         
                         {isEditing ? (
@@ -510,7 +558,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
                                 <option value="hotel">🏨 住宿</option>
                               </select>
                             </div>
-                            <button onClick={() => deleteItem(dIdx, actualIdx)} className="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded-lg border border-red-100 flex-shrink-0 self-end sm:self-auto">
+                            <button onClick={(e) => deleteItem(dIdx, actualIdx, e)} className="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded-lg border border-red-100 flex-shrink-0 self-end sm:self-auto">
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                             </button>
                           </div>
@@ -557,6 +605,20 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
                                       {isExpanded ? <ChevronUp className="w-4 h-4 text-indigo-400" /> : <ChevronDown className="w-4 h-4 text-gray-300" />}
                                     </div>
                                   </div>
+                                  {isExpanded && !isEditing && matched && (
+                                    <div className="mt-2 mb-2 px-4 sm:px-0">
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onLocationClick(matched);
+                                        }}
+                                        className="flex items-center justify-center gap-1.5 w-full bg-indigo-600 hover:bg-black text-white py-2.5 rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-200"
+                                      >
+                                        <Navigation className="w-3.5 h-3.5" />
+                                        <span>📌 跳转至探索详情</span>
+                                      </button>
+                                    </div>
+                                  )}
 
                                   {isExpanded && (
                                     <div className="mt-4 space-y-4 animate-in slide-in-from-top-2 duration-300">

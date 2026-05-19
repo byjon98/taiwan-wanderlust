@@ -247,6 +247,8 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
   const [history, setHistory] = useState<any[][]>([]);
   const [future, setFuture] = useState<any[][]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<string[]>([]);
+  const [searchIndex, setSearchIndex] = useState(0);
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchQuery.trim()) {

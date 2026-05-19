@@ -428,7 +428,14 @@ export default function ExpensePanel() {
       <div className="pt-8 pb-4 px-6 border-b border-gray-100 flex flex-col gap-4">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-black tracking-tight">财务大盘</h1>
+            <h1 className="text-2xl font-black tracking-tight flex items-center gap-2">
+              财务大盘
+              {activeTab === 'dashboard' && (
+                <button onClick={() => setIsFabOpen(true)} className="w-7 h-7 bg-black hover:bg-blue-400 text-white rounded-full flex items-center justify-center shadow-sm active:scale-95 transition-all">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+              )}
+            </h1>
             <div className="text-[10px] font-bold text-gray-400 mt-0.5">
               NT$ 100 ≈ MYR {(exchangeRate * 100).toFixed(2)}
             </div>

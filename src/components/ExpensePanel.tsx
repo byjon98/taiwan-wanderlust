@@ -12,6 +12,7 @@ export default function ExpensePanel() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [exchangeRate, setExchangeRate] = useState<number>(0.145);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'split' | 'burn'>('dashboard');
+  const [editExpenseId, setEditExpenseId] = useState<string | null>(null);
 
   // History & Undo State
   const [deletedHistory, setDeletedHistory] = useState<Expense[]>([]);
@@ -37,7 +38,7 @@ export default function ExpensePanel() {
 
   // Top Up Fields
   const [topUpAmount, setTopUpAmount] = useState('');
-  const [topUpSource, setTopUpSource] = useState<'cash_jon' | 'cash_june' | 'card' | 'myr_cash'>('cash_jon');
+  const [topUpSource, setTopUpSource] = useState<'cash_jon' | 'cash_june' | 'card_jon' | 'card_june' | 'myr_cash'>('cash_jon');
   const [topUpTarget, setTopUpTarget] = useState<'easycard_jon' | 'easycard_june'>('easycard_jon');
 
   // Initialize
@@ -127,9 +128,11 @@ export default function ExpensePanel() {
             jonCashSpentTwd += (e.currency === 'TWD' ? e.paidByJon : e.paidByJon / exchangeRate);
             juneCashSpentTwd += (e.currency === 'TWD' ? e.paidByJune : e.paidByJune / exchangeRate);
         }
-        if (e.paymentMethod === 'easycard') {
-            jonEasyCardSpentTwd += (e.currency === 'TWD' ? e.paidByJon : e.paidByJon / exchangeRate);
-            juneEasyCardSpentTwd += (e.currency === 'TWD' ? e.paidByJune : e.paidByJune / exchangeRate);
+        if (e.paymentMethod === 'easycard_jon') {
+            jonEasyCardSpentTwd += (e.currency === 'TWD' ? e.amount : e.amount / exchangeRate);
+        }
+        if (e.paymentMethod === 'easycard_june') {
+            juneEasyCardSpentTwd += (e.currency === 'TWD' ? e.amount : e.amount / exchangeRate);
         }
         if (e.paymentMethod === 'card') cardSpentMyr += amountMyr;
         if (e.paymentMethod === 'myr_cash') myrCashSpent += amountMyr;
@@ -238,7 +241,7 @@ export default function ExpensePanel() {
     }
 
     const newExpense: Expense = {
-      id: Date.now().toString(),
+      id: editExpenseId || Date.now().toString(),
       subject: entrySubject,
       amount: amountNum,
       currency: entryCurrency,
@@ -247,15 +250,51 @@ export default function ExpensePanel() {
       forJon, forJune,
       category: entryCategory,
       zone: entryZone === 'custom' ? customZoneText : entryZone,
-      timestamp: Date.now(),
+      timestamp: editExpenseId ? (expenses.find(e => e.id === editExpenseId)?.timestamp || Date.now()) : Date.now(),
       day: entryDay,
     };
     
-    setExpenses(prev => [newExpense, ...prev]);
+    if (editExpenseId) {
+      setExpenses(prev => prev.map(e => e.id === editExpenseId ? newExpense : e));
+    } else {
+      setExpenses(prev => [newExpense, ...prev]);
+    }
+    
     setIsFabOpen(false);
     setEntrySubject('');
     setEntryAmount('');
     setCustomBeneficiaryJonAmount('');
+    setEditExpenseId(null);
+  };
+
+  const handleEdit = (expense: Expense) => {
+    setEditExpenseId(expense.id);
+    setEntryAmount(expense.amount.toString());
+    setEntrySubject(expense.subject);
+    setEntryCurrency(expense.currency);
+    setEntryCategory(expense.category);
+    setEntryPaidBy(expense.paymentMethod as any);
+    setEntryDay(expense.day);
+    
+    // Reverse engineer forWho
+    if (expense.forJon > 0 && expense.forJune === 0) setEntryBeneficiary('jon_100');
+    else if (expense.forJune > 0 && expense.forJon === 0) setEntryBeneficiary('june_100');
+    else if (expense.forJon === expense.forJune && expense.forJon > 0) setEntryBeneficiary('split_50');
+    else {
+      setEntryBeneficiary('custom');
+      setCustomBeneficiaryJonAmount(expense.forJon.toString());
+    }
+
+    // Reverse engineer advancedBy
+    if (expense.paidByJon > 0 && expense.paidByJune === 0) setEntryAdvancedBy('jon_100');
+    else if (expense.paidByJune > 0 && expense.paidByJon === 0) setEntryAdvancedBy('june_100');
+    else if (expense.paidByJon === expense.paidByJune && expense.paidByJon > 0) setEntryAdvancedBy('split_50');
+    else {
+      setEntryAdvancedBy('custom');
+      setCustomAdvancedJonAmount(expense.paidByJon.toString());
+    }
+    
+    setIsFabOpen(true);
   };
 
   const handleTopUpSubmit = () => {
@@ -266,9 +305,8 @@ export default function ExpensePanel() {
     let forJon = 0; let forJune = 0;
 
     // Whoever pays the source advances the money
-    if (topUpSource === 'cash_jon') paidByJon = amountNum;
-    else if (topUpSource === 'cash_june') paidByJune = amountNum;
-    else paidByJon = amountNum; // card default to jon
+    if (topUpSource === 'cash_jon' || topUpSource === 'card_jon') paidByJon = amountNum;
+    else paidByJune = amountNum;
 
     // Whoever's card is topped up is the beneficiary
     if (topUpTarget === 'easycard_jon') forJon = amountNum;
@@ -308,7 +346,7 @@ export default function ExpensePanel() {
       subject: `✅ 现金结清 (Settle Up)`,
       amount: amountTwd,
       currency: 'TWD',
-      paymentMethod: 'cash_jon', // placeholder
+      paymentMethod: 'cash', // placeholder
       paidByJon: isJonPaying ? amountTwd : 0,
       paidByJune: isJonPaying ? 0 : amountTwd,
       forJon: isJonPaying ? 0 : amountTwd,
@@ -462,7 +500,7 @@ export default function ExpensePanel() {
                     <span className="text-gray-800">NT$ {stats.jonCashRemainingTwd.toLocaleString()}</span>
                   </div>
                   <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                    <div className={cn("h-full rounded-full", stats.jonCashRemainingTwd/17000 < 0.2 ? "bg-red-500" : "bg-black")} style={{ width: `${Math.max(0, (stats.jonCashRemainingTwd/17000)*100)}%` }} />
+                    <div className={cn("h-full rounded-full", stats.jonCashRemainingTwd/17000 < 0.2 ? "bg-pink-400" : "bg-black")} style={{ width: `${Math.max(0, (stats.jonCashRemainingTwd/17000)*100)}%` }} />
                   </div>
                 </div>
                 <div>
@@ -471,7 +509,7 @@ export default function ExpensePanel() {
                     <span className="text-gray-800">NT$ {stats.juneCashRemainingTwd.toLocaleString()}</span>
                   </div>
                   <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                    <div className={cn("h-full rounded-full", stats.juneCashRemainingTwd/16000 < 0.2 ? "bg-red-500" : "bg-black")} style={{ width: `${Math.max(0, (stats.juneCashRemainingTwd/16000)*100)}%` }} />
+                    <div className={cn("h-full rounded-full", stats.juneCashRemainingTwd/16000 < 0.2 ? "bg-pink-400" : "bg-black")} style={{ width: `${Math.max(0, (stats.juneCashRemainingTwd/16000)*100)}%` }} />
                   </div>
                 </div>
               </div>
@@ -586,7 +624,7 @@ export default function ExpensePanel() {
           <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-300">
             <div className="bg-white rounded-2xl p-6 border border-gray-200 text-center">
               <h3 className="font-bold text-gray-800 mb-6 flex items-center justify-center gap-2">
-                <Calculator className="w-5 h-5 text-gray-400" /> 内部对冲结算单 (MYR等值)
+                <Calculator className="w-5 h-5 text-gray-400" /> 内部对冲结算单 (MYR等值 ≈ NT$ {(Math.abs(stats.jonOwesJune) * exchangeRate).toLocaleString(undefined, {maximumFractionDigits:0})})
               </h3>
               
               <div className="flex items-center justify-between gap-4 mb-8">
@@ -620,7 +658,7 @@ export default function ExpensePanel() {
                 )}
                 
                 {Math.abs(stats.jonOwesJune) >= 0.1 && (
-                  <button onClick={handleSettleUp} className="mt-6 w-full bg-black text-white py-3 rounded-xl font-black text-sm hover:bg-gray-800 transition-colors">
+                  <button onClick={handleSettleUp} className="mt-6 w-full bg-black text-white py-3 rounded-xl font-black text-sm hover:bg-blue-400 transition-colors">
                     ✅ 确认已转账 (Settle Up)
                   </button>
                 )}
@@ -648,7 +686,7 @@ export default function ExpensePanel() {
                 {Object.keys(dailyBurn).map(d => {
                   const day = parseInt(d);
                   const dayCats = dailyBurn[day];
-                  const totalSpent = Object.values(dayCats).reduce((a,b)=>a+b, 0);
+                  const totalSpent = (Object.values(dayCats) as number[]).reduce((a,b)=>a+b, 0);
                   const budget = 3134; 
                   const heightPct = Math.min(100, (totalSpent / (budget * 1.5)) * 100);
                   
@@ -659,7 +697,7 @@ export default function ExpensePanel() {
                       </div>
                       <div className="w-full max-w-[24px] bg-gray-50 rounded-t-md flex flex-col justify-end overflow-hidden relative" style={{ height: '100%' }}>
                         <div className="w-full flex flex-col justify-end" style={{ height: `${heightPct}%` }}>
-                          {Object.entries(dayCats).sort((a,b)=>b[1]-a[1]).map(([groupName, amount]) => {
+                          {(Object.entries(dayCats) as [string, number][]).sort((a,b)=>b[1]-a[1]).map(([groupName, amount]) => {
                             const segmentPct = (amount / totalSpent) * 100;
                             return (
                               <div key={groupName} style={{ height: `${segmentPct}%`, backgroundColor: getGroupColor(groupName) }} className="w-full" />
@@ -691,7 +729,7 @@ export default function ExpensePanel() {
       {!isFabOpen && !isTopUpOpen && (
         <button 
           onClick={() => setIsFabOpen(true)}
-          className="fixed lg:absolute bottom-24 lg:bottom-10 right-6 lg:right-10 w-14 h-14 bg-black hover:bg-gray-800 text-white rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.15)] flex items-center justify-center z-50 transition-transform active:scale-95"
+          className="fixed lg:absolute bottom-24 lg:bottom-10 left-6 lg:right-10 w-14 h-14 bg-black hover:bg-blue-400 text-white rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.15)] flex items-center justify-center z-50 transition-transform active:scale-95"
         >
           <Plus className="w-6 h-6" />
         </button>
@@ -939,7 +977,8 @@ export default function ExpensePanel() {
                 <div className="flex gap-2">
                   <button onClick={() => setTopUpSource('cash_jon')} className={cn("flex-1 py-3 rounded-xl text-xs font-bold border", topUpSource === 'cash_jon' ? "bg-black text-white border-black" : "bg-white text-gray-600 border-gray-200")}>👦🏻 Jon 现金</button>
                   <button onClick={() => setTopUpSource('cash_june')} className={cn("flex-1 py-3 rounded-xl text-xs font-bold border", topUpSource === 'cash_june' ? "bg-black text-white border-black" : "bg-white text-gray-600 border-gray-200")}>👧🏻 June 现金</button>
-                  <button onClick={() => setTopUpSource('card')} className={cn("flex-1 py-3 rounded-xl text-xs font-bold border", topUpSource === 'card' ? "bg-black text-white border-black" : "bg-white text-gray-600 border-gray-200")}>💳 信用卡</button>
+                  <button onClick={() => setTopUpSource('card_jon')} className={cn("flex-1 py-3 rounded-xl text-[10px] font-bold border", topUpSource === 'card_jon' ? "bg-black text-white border-black" : "bg-white text-gray-600 border-gray-200")}>💳 Jon</button>
+                  <button onClick={() => setTopUpSource('card_june')} className={cn("flex-1 py-3 rounded-xl text-[10px] font-bold border", topUpSource === 'card_june' ? "bg-black text-white border-black" : "bg-white text-gray-600 border-gray-200")}>💳 June</button>
                 </div>
               </div>
 

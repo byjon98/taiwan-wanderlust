@@ -19,7 +19,10 @@ import {
   RotateCcw,
   Undo2,
   Redo2,
-  CheckCircle2
+  CheckCircle2,
+  Search,
+  X,
+  Navigation
 } from 'lucide-react';
 import { regions } from '../data';
 
@@ -582,7 +585,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
                                 <option value="hotel">🏨 住宿</option>
                               </select>
                             </div>
-                            <button onClick={(e) => deleteItem(dIdx, actualIdx, e)} className="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded-lg border border-red-100 flex-shrink-0 self-end sm:self-auto">
+                            <button onClick={() => deleteItem(dIdx, actualIdx)} className="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded-lg border border-red-100 flex-shrink-0 self-end sm:self-auto">
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                             </button>
                           </div>

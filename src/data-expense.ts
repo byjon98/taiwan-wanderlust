@@ -3,7 +3,7 @@ export interface Expense {
   subject: string;
   amount: number; 
   currency: 'TWD' | 'MYR';
-  paymentMethod: 'cash' | 'card' | 'myr_cash' | 'easycard';
+  paymentMethod: 'cash' | 'card' | 'myr_cash' | 'easycard_jon' | 'easycard_june';
   
   // Exactly how much was advanced by each person
   paidByJon: number;
@@ -26,7 +26,8 @@ export interface Expense {
 export const PAYMENT_METHODS = [
   { id: 'cash', icon: '💵', label: '实体台币', desc: '扣除各自现金池' },
   { id: 'card', icon: '💳', label: '信用卡/Apple Pay', desc: '扣除备用金' },
-  { id: 'easycard', icon: '🚇', label: '悠游卡', desc: '扣除各自卡余额' },
+  { id: 'easycard_jon', icon: '👦🏻🚇', label: 'Jon 悠游卡', desc: '扣除Jon卡余额' },
+  { id: 'easycard_june', icon: '👧🏻🚇', label: 'June 悠游卡', desc: '扣除June卡余额' },
   { id: 'myr_cash', icon: '🇲🇾', label: '实体马币', desc: '扣马币现金' },
 ];
 

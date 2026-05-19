@@ -103,14 +103,19 @@ const defaultItinerary = [
     },
     {
       day: 4,
-      title: "九族文化村 & 宁夏夜市",
+      title: "空降九族，直奔台北主基地",
       date: "5/26 (Tue)",
       items: [
-        { time: "09:30", name: "九族文化村 (缆车入园)", type: "spot" },
-        { time: "15:00", name: "前往台北 (高铁)", type: "transport" },
-        { time: "17:00", name: "入住 City Suites Beimen (北门)", type: "hotel" },
-        { time: "18:30", name: "宁夏夜市 (猪肝荣仔、圆环边、刘芋仔)", type: "food" },
-        { time: "21:00", name: "家乐福桂林店 (扫货)", type: "shopping" }
+        { time: "09:00", name: "伊达邵退房，大厅寄存大件行李", type: "hotel" },
+        { time: "09:30", name: "搭乘日月潭缆车跨山空降", type: "transport" },
+        { time: "10:00", name: "九族文化村 (由上往下纯玩约会)", type: "spot" },
+        { time: "14:00", name: "搭乘缆车原路返回", type: "transport" },
+        { time: "14:20", name: "伊达邵饭店提取所有行李", type: "hotel" },
+        { time: "14:45", name: "搭游船或计程车前往水社", type: "transport" },
+        { time: "16:00", name: "搭乘 6670 客运前往高铁台中站", type: "transport" },
+        { time: "18:00", name: "高铁台中站站内晚餐 (避开牛羊)", type: "food" },
+        { time: "19:36", name: "搭乘高铁前往台北 (看高铁换票战术)", type: "transport" },
+        { time: "20:30", name: "入住 City Suites Beimen (北门)", type: "hotel" }
       ]
     },
     {

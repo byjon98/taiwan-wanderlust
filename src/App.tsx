@@ -440,6 +440,19 @@ export default function App() {
                  <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-gray-400">Locate Me</span>
               </div>
             </button>
+
+            <button 
+              onClick={() => { setViewMode('itinerary'); setActiveTab('expense'); }}
+              className="group flex flex-col items-center gap-4 text-gray-400 hover:text-[#2D3436] transition-colors flex-shrink-0"
+            >
+              <div className="w-14 h-14 rounded-full border border-gray-200 group-hover:border-[#2D3436] flex items-center justify-center transition-all group-hover:scale-105 bg-white shadow-sm group-hover:shadow-md">
+                <Wallet className="w-5 h-5 text-gray-600" />
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                 <span className="text-[10px] font-bold uppercase tracking-widest text-[#2D3436]">财务大盘</span>
+                 <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-gray-400">Expense</span>
+              </div>
+            </button>
           </div>
           
         </div>

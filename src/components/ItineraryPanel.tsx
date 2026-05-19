@@ -16,7 +16,9 @@ import {
   MessageSquare,
   AlertTriangle,
   Lightbulb,
-  RotateCcw
+  RotateCcw,
+  Undo2,
+  Redo2
 } from 'lucide-react';
 import { regions } from '../data';
 

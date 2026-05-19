@@ -1014,7 +1014,7 @@ export default function App() {
               
               {/* Compare Floating CTA */}
               {compareSelected.length >= 2 && (
-                <div className="fixed lg:absolute bottom-8 left-1/2 -translate-x-1/2 bg-white text-[#2D3436] px-3 py-2 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.12)] flex items-center gap-3 z-20 animate-in slide-in-from-bottom-8 duration-300 border border-gray-100">
+                <div className="fixed lg:absolute bottom-[110px] left-1/2 -translate-x-1/2 bg-white text-[#2D3436] px-3 py-2 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.12)] flex items-center gap-3 z-20 animate-in slide-in-from-bottom-8 duration-300 border border-gray-100">
                   <div className="pl-3 pr-1">
                     <span className="text-[10px] font-bold tracking-widest uppercase text-gray-400 whitespace-nowrap">已选 {compareSelected.length} 项</span>
                   </div>

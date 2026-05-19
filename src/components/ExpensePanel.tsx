@@ -500,7 +500,7 @@ export default function ExpensePanel() {
                     <span className="text-gray-800">NT$ {stats.jonCashRemainingTwd.toLocaleString()}</span>
                   </div>
                   <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                    <div className={cn("h-full rounded-full", stats.jonCashRemainingTwd/17000 < 0.2 ? "bg-pink-400" : "bg-black")} style={{ width: `${Math.max(0, (stats.jonCashRemainingTwd/17000)*100)}%` }} />
+                    <div className={cn("h-full rounded-full transition-all duration-1000", stats.jonCashRemainingTwd/17000 < 0.2 ? "bg-pink-400" : "bg-blue-400")} style={{ width: `${Math.max(0, (stats.jonCashRemainingTwd/17000)*100)}%` }} />
                   </div>
                 </div>
                 <div>
@@ -509,7 +509,7 @@ export default function ExpensePanel() {
                     <span className="text-gray-800">NT$ {stats.juneCashRemainingTwd.toLocaleString()}</span>
                   </div>
                   <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                    <div className={cn("h-full rounded-full", stats.juneCashRemainingTwd/16000 < 0.2 ? "bg-pink-400" : "bg-black")} style={{ width: `${Math.max(0, (stats.juneCashRemainingTwd/16000)*100)}%` }} />
+                    <div className={cn("h-full rounded-full transition-all duration-1000", stats.juneCashRemainingTwd/16000 < 0.2 ? "bg-red-500" : "bg-pink-400")} style={{ width: `${Math.max(0, (stats.juneCashRemainingTwd/16000)*100)}%` }} />
                   </div>
                 </div>
               </div>
@@ -610,9 +610,12 @@ export default function ExpensePanel() {
                       {e.amount.toLocaleString(undefined, {minimumFractionDigits: e.currency === 'MYR' ? 2 : 0})}
                     </div>
                   </div>
-                  <button onClick={() => deleteExpense(e.id)} className="p-1.5 hover:bg-gray-100 text-gray-300 hover:text-red-500 rounded-lg ml-1">
-                    <X className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center">
+                    <button onClick={() => handleEdit(e)} className="px-2.5 py-1 text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg ml-2">修改</button>
+                    <button onClick={() => deleteExpense(e.id)} className="p-1.5 hover:bg-gray-100 text-gray-300 hover:text-red-500 rounded-lg ml-1">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -705,7 +708,7 @@ export default function ExpensePanel() {
                           })}
                         </div>
                       </div>
-                      <div className="text-[9px] font-bold text-gray-400 mt-2">D{day}</div>
+                      <div className="text-[9px] font-bold text-gray-400 mt-2">{day === 0 ? 'N/A' : `D${day}`}</div>
                     </div>
                   );
                 })}
@@ -725,11 +728,14 @@ export default function ExpensePanel() {
 
       </div>
 
-      {/* FABs */}
-      {!isFabOpen && !isTopUpOpen && (
+      {/* Floating Action Button for Quick Entry (Only on Dashboard) */}
+      {activeTab === 'dashboard' && (
+        <div className="fixed bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white/90 via-white/50 to-transparent pointer-events-none z-40" />
+      )}
+      {activeTab === 'dashboard' && (
         <button 
-          onClick={() => setIsFabOpen(true)}
-          className="fixed lg:absolute bottom-24 lg:bottom-10 left-6 lg:right-10 w-14 h-14 bg-black hover:bg-blue-400 text-white rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.15)] flex items-center justify-center z-50 transition-transform active:scale-95"
+          onClick={() => { setIsFabOpen(true); }}
+          className="fixed lg:absolute bottom-24 lg:bottom-10 left-6 lg:left-10 w-14 h-14 bg-black hover:bg-blue-400 text-white rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.15)] flex items-center justify-center z-50 transition-transform active:scale-95"
         >
           <Plus className="w-6 h-6" />
         </button>
@@ -763,6 +769,7 @@ export default function ExpensePanel() {
                     onChange={e => setEntryDay(parseInt(e.target.value))}
                     className="w-20 bg-gray-50 border-none rounded-lg text-xs font-bold text-gray-600 px-2 outline-none"
                   >
+                    <option value={0}>N/A</option>
                     {[...Array(CONSTANTS.TOTAL_DAYS)].map((_, i) => (
                       <option key={i} value={i+1}>Day {i+1}</option>
                     ))}

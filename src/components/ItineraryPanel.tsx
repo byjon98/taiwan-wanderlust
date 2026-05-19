@@ -59,30 +59,30 @@ const getTypeIcon = (type: string) => {
 const defaultItinerary = [
     {
       day: 1,
-      title: "抵达台中 & 旱溪夜市",
+      title: "登陆、通讯解禁与夜间移动",
       date: "5/23 (Sat)",
       items: [
+        { time: "10:30", name: "搭乘 Grab 前往 KLIA T1", type: "transport" },
+        { time: "11:45", name: "办理登机与托运 (⚠️电池随身)", type: "transport" },
         { time: "14:45", name: "搭乘中华航空 CI 722 (KUL -> TPE)", type: "transport" },
-        { time: "19:35", name: "抵达桃园机场 T1", type: "transport" },
-        { time: "20:30", name: "机场捷运 -> 桃园高铁站", type: "transport" },
-        { time: "21:30", name: "高铁 (HSR) -> 台中站", type: "transport" },
-        { time: "22:30", name: "入住 台中東旅 Hotel East Taichung", type: "hotel" },
-        { time: "23:00", name: "旱溪夜市 (宵夜)", type: "food" }
+        { time: "19:35", name: "降落桃园机场 T1 (e-Gate极速通关)", type: "transport" },
+        { time: "20:15", name: "购买中华电信 eSIM 开通网络", type: "shopping" },
+        { time: "20:30", name: "搭乘统联客运 1623 路线前往台中", type: "transport" },
+        { time: "23:30", name: "搭 Uber 入住 台中東旅 Hotel East", type: "hotel" }
       ]
     },
     {
       day: 2,
-      title: "台中全日美食马拉松",
+      title: "台中旧城风华与首场夜市突击",
       date: "5/24 (Sun)",
       items: [
-        { time: "08:00", name: "台中第二市场 (王記、三代、老賴)", type: "food" },
-        { time: "09:30", name: "第五市场 (阿義、樂群、游記、日棧)", type: "food" },
-        { time: "11:00", name: "宫原眼科 & 第四信用合作社", type: "spot" },
-        { time: "13:00", name: "台中肉员", type: "food" },
-        { time: "14:30", name: "审計新村", type: "spot" },
-        { time: "16:00", name: "LaLaport 台中 (MUJI, GU, LOPIA)", type: "shopping" },
-        { time: "17:30", name: "夜间部爌肉饭", type: "food" },
-        { time: "19:00", name: "一中街夜市 & 逢甲夜市", type: "food" }
+        { time: "09:30", name: "享用台中东旅双人早餐", type: "food" },
+        { time: "10:45", name: "台中第二市场 (避开牛羊 / 清心优多绿)", type: "food" },
+        { time: "12:45", name: "宫原眼科 & 第四信用合作社", type: "spot" },
+        { time: "14:30", name: "审计新村 (暮暮市集)", type: "spot" },
+        { time: "17:00", name: "LaLaport 台中 & 大江户町鳗屋", type: "food" },
+        { time: "19:30", name: "一中街夜市", type: "food" },
+        { time: "22:00", name: "搭 Uber 返回饭店洗衣休息", type: "hotel" }
       ]
     },
     {

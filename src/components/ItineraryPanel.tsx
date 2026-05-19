@@ -658,7 +658,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
                   </div>
 
                   {/* Nearby Recommendations for this Region */}
-                  {group.regionId && group.regionId !== 'info' && (
+                  {group.regionId && group.regionId !== 'info' && group.regionId !== 'extra' && (
                     <div className="mt-4 mb-2 ml-2 sm:ml-14 p-4 bg-green-50/50 rounded-2xl border border-green-100/50">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-2">

@@ -3,7 +3,8 @@ import { regions } from './data';
 import { souvenirModules, groceryModules } from './data/info';
 import InfoPanel from './components/InfoPanel';
 import ItineraryPanel from './components/ItineraryPanel';
-import { Clock, Search, Map, Filter, ArrowUpDown, Info, Check, Plus, ShoppingBag, MapPin, ExternalLink, Scale, Navigation, Sparkles, ChevronRight, Calendar, Home } from 'lucide-react';
+import ExpensePanel from './components/ExpensePanel';
+import { Clock, Search, Map, Filter, ArrowUpDown, Info, Check, Plus, ShoppingBag, MapPin, ExternalLink, Scale, Navigation, Sparkles, ChevronRight, Calendar, Home, Wallet } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -69,7 +70,7 @@ export default function App() {
     }
   ], []);
 
-  const [activeTab, setActiveTab] = useState<'explore' | 'info' | 'itinerary'>('explore');
+  const [activeTab, setActiveTab] = useState<'explore' | 'info' | 'itinerary' | 'expense'>('explore');
   const [time, setTime] = useState(new Date());
   const [showLocateModal, setShowLocateModal] = useState(false);
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
@@ -510,6 +511,16 @@ export default function App() {
             )}
           >
             我的行程
+            <button 
+              onClick={() => setActiveTab(activeTab === 'expense' ? 'explore' : 'expense')}
+              className={cn(
+                "hidden md:flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm",
+                activeTab === 'expense' ? "bg-[#2D3436] text-white border-[#2D3436]" : "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+              )}
+            >
+              <Wallet className="w-4 h-4" />
+              <span>财务</span>
+            </button>
           </button>
         </div>
       </header>
@@ -1005,6 +1016,10 @@ export default function App() {
              <div className="bg-white rounded-2xl border border-gray-100 p-6 lg:h-full lg:overflow-y-auto no-scrollbar shadow-sm">
                 <InfoPanel />
              </div>
+           ) : activeTab === 'expense' ? (
+             <div className="bg-white rounded-2xl border border-gray-100 lg:h-full lg:overflow-y-auto no-scrollbar shadow-sm">
+                <ExpensePanel />
+             </div>
            ) : activeTab === 'itinerary' ? (
              <div className="bg-white rounded-2xl border border-gray-100 p-6 lg:h-full lg:overflow-y-auto no-scrollbar shadow-sm">
                 <ItineraryPanel onLocationClick={(loc) => {
@@ -1060,6 +1075,17 @@ export default function App() {
           >
             <Info className={cn("w-5 h-5", activeTab === 'info' ? "fill-indigo-50" : "")} />
             <span className="text-[10px] font-black uppercase tracking-tighter">旅行资讯</span>
+          </button>
+          
+          <button 
+            onClick={() => setActiveTab('expense')}
+            className={cn(
+              "flex flex-col items-center gap-1 flex-1 transition-all",
+              activeTab === 'expense' ? "text-indigo-600" : "text-gray-400"
+            )}
+          >
+            <Wallet className={cn("w-5 h-5", activeTab === 'expense' ? "fill-indigo-50" : "")} />
+            <span className="text-[10px] font-black uppercase tracking-tighter">财务</span>
           </button>
         </div>
 

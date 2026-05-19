@@ -406,7 +406,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
 
       return { ...day, groups };
     });
-  }, [filteredDays]);
+  }, [itineraryDays, searchQuery]);
 
   return (
     <div className="text-gray-800 space-y-6 pb-10 w-full animate-in fade-in duration-500">

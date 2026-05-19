@@ -92,30 +92,30 @@ const defaultItinerary = [
       date: "5/25 (Mon)",
       items: [
         { time: "09:30", name: "台中东旅享用早餐，打包行李退房", type: "hotel" },
-        { time: "10:30", name: "搭 Uber 前往高铁台中站/干城站", type: "transport" },
+        { time: "10:30", name: "搭 Uber 前往高铁台中站/干城站 (6670 高铁台中站 3月台)", type: "transport" },
         { time: "11:00", name: "搭乘台湾好行 6670 路线直达日月潭水社", type: "transport" },
-        { time: "13:00", name: "水社 ➔ 伊达邵 (接驳方案评估)", type: "transport" },
-        { time: "14:00", name: "入住 伊達邵渡假旅店 (现金支付)", type: "hotel" },
-        { time: "15:00", name: "伊达邵码头搭乘游船 (Klook凭证)", type: "spot" },
-        { time: "16:30", name: "玄光码头 (阿嬷香菇茶叶蛋 / 赏倒影)", type: "food" },
-        { time: "18:30", name: "伊达邵老街 (烤香鱼/糯米粑粑/涌泉豆花)", type: "food" }
+        { time: "13:00", name: "水社 ➔ 伊达邵 (⚠️ 叫计程车直达，约 NT$400，绝对不拖行李坐船)", type: "transport" },
+        { time: "14:00", name: "入住 ItaThao Smart Stay (现场现金支付)", type: "hotel" },
+        { time: "15:00", name: "玄光码头 (步行前往，阿嬷香菇茶叶蛋 / 赏湖面倒影)", type: "food" },
+        { time: "17:00", name: "水社码头夕阳 (计程车前往，约 NT$200)", type: "spot" },
+        { time: "18:30", name: "伊达邵老街 (烤香鱼/糯米粑粑/小米酒/饭饭鸡翅)", type: "food" }
       ]
     },
     {
       day: 4,
-      title: "空降九族，直奔台北主基地",
+      title: "Klook 三合一 + 直奔台北主基地",
       date: "5/26 (Tue)",
       items: [
-        { time: "09:00", name: "伊达邵退房，大厅寄存大件行李", type: "hotel" },
-        { time: "09:30", name: "搭乘日月潭缆车跨山空降", type: "transport" },
-        { time: "10:00", name: "九族文化村 (由上往下纯玩约会)", type: "spot" },
-        { time: "14:00", name: "搭乘缆车原路返回", type: "transport" },
-        { time: "14:20", name: "伊达邵饭店提取所有行李", type: "hotel" },
-        { time: "14:45", name: "搭游船或计程车前往水社", type: "transport" },
-        { time: "16:00", name: "搭乘 6670 客运前往高铁台中站", type: "transport" },
+        { time: "09:00", name: "ItaThao 退房，大厅寄存大件行李", type: "hotel" },
+        { time: "09:30", name: "搭乘日月潭缆车跨山空降 (Klook 凭证·第1项)", type: "transport" },
+        { time: "10:00", name: "九族文化村 (由上往下纯玩，Klook 凭证·第2项)", type: "spot" },
+        { time: "14:00", name: "搭乘缆车原路返回日月潭", type: "transport" },
+        { time: "14:30", name: "步行回 ItaThao 提取所有行李", type: "hotel" },
+        { time: "15:00", name: "伊达邵码头搭乘游船至水社 (Klook 凭证·第3项)", type: "spot" },
+        { time: "15:30", name: "水社换搭 6670 客运前往高铁台中站", type: "transport" },
         { time: "18:00", name: "高铁台中站站内晚餐 (避开牛羊)", type: "food" },
-        { time: "19:36", name: "搭乘高铁前往台北 (看高铁换票战术)", type: "transport" },
-        { time: "20:30", name: "入住 City Suites Beimen (北门)", type: "hotel" }
+        { time: "19:36", name: "搭乘高铁 850次 前往台北 (4车 10D/10E)", type: "transport" },
+        { time: "20:45", name: "入住 City Suites Beimen (北门)", type: "hotel" }
       ]
     },
     {
@@ -222,10 +222,17 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
   };
 
   // --- STATE & PERSISTENCE ---
+  // Clean up old localStorage keys from previous versions
+  React.useEffect(() => {
+    ['v1','v2','v3','v4','v5','v6'].forEach(v =>
+      localStorage.removeItem(`taiwan_trip_itinerary_${v}`)
+    );
+  }, []);
+
   const [isEditing, setIsEditing] = useState(false);
   const [itineraryDays, setItineraryDays] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('taiwan_trip_itinerary_v6');
+      const saved = localStorage.getItem('taiwan_trip_itinerary_v7');
       return saved ? JSON.parse(saved) : defaultItinerary;
     } catch {
       return defaultItinerary;
@@ -235,7 +242,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
   const [future, setFuture] = useState<any[][]>([]);
 
   React.useEffect(() => {
-    localStorage.setItem('taiwan_trip_itinerary_v6', JSON.stringify(itineraryDays));
+    localStorage.setItem('taiwan_trip_itinerary_v7', JSON.stringify(itineraryDays));
   }, [itineraryDays]);
 
   // --- UNDO / REDO ---

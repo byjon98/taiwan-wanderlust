@@ -232,31 +232,17 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
     setItineraryDays(next);
   };
 
-  const [restoredDayToast, setRestoredDayToast] = useState<{ dIdx: number, backup: any } | null>(null);
-
   const restoreDayToDefault = (dIdx: number) => {
     if (dIdx < defaultItinerary.length) {
       if (window.confirm(`确定要将 Day ${itineraryDays[dIdx].day} 恢复为系统的默认行程吗？这会覆盖您对这一天的所有修改。`)) {
-        setRestoredDayToast({ dIdx, backup: JSON.parse(JSON.stringify(itineraryDays[dIdx])) });
         const next = [...itineraryDays];
         next[dIdx] = JSON.parse(JSON.stringify(defaultItinerary[dIdx]));
         // Keep the day number the same in case they deleted previous days
         next[dIdx].day = itineraryDays[dIdx].day;
         saveState(next);
-        
-        setTimeout(() => setRestoredDayToast(null), 6000);
       }
     } else {
       alert("此天数没有系统预设的默认行程！");
-    }
-  };
-
-  const undoRestoreDay = () => {
-    if (restoredDayToast) {
-      const next = [...itineraryDays];
-      next[restoredDayToast.dIdx] = restoredDayToast.backup;
-      saveState(next);
-      setRestoredDayToast(null);
     }
   };
 
@@ -698,21 +684,6 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
             className="w-full py-4 bg-white border border-gray-200 shadow-sm rounded-2xl text-[#2D3436] font-black text-lg hover:border-[#2D3436] hover:shadow-md transition-all flex items-center justify-center gap-2"
           >
             <Plus className="w-5 h-5" /> 增加一天 (Add Day)
-          </button>
-        </div>
-      )}
-
-      {/* Undo Restore Toast */}
-      {restoredDayToast && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center justify-between gap-4 z-50 animate-in slide-in-from-bottom-8 fade-in duration-300 sm:min-w-[300px]">
-          <span className="text-sm font-medium pr-2">
-            已恢复默认行程
-          </span>
-          <button 
-            onClick={undoRestoreDay}
-            className="text-[#00cec9] hover:text-white transition-colors text-sm font-bold uppercase tracking-wider bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg whitespace-nowrap"
-          >
-            撤销 Undo
           </button>
         </div>
       )}

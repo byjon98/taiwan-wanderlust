@@ -155,27 +155,32 @@ const defaultItinerary = [
     },
     {
       day: 7,
-      title: "台北城市慢游",
+      title: "迪化街 + 西门町 + 师大夜市",
       date: "5/29 (Fri)",
       items: [
-        { time: "09:00", name: "味鼎西門 (台式早餐)", type: "food" },
-        { time: "11:00", name: "西门町金狮楼 (饮茶)", type: "food" },
-        { time: "13:30", name: "大稻埕迪化街 (大稻埕鲁肉饭)", type: "spot" },
-        { time: "15:30", name: "萬年商業大樓 (金园排骨)", type: "shopping" },
-        { time: "19:00", name: "师园盐酥鸡 & 好好味冰火菠萝油", type: "food" }
+        { time: "10:00", name: "大稻埕迪化街 (霞海城隍庙)", type: "spot" },
+        { time: "11:30", name: "大稻埕鲁肉饭 (加半熟鸭蛋)", type: "food" },
+        { time: "13:00", name: "西门町万年商业大楼 (金园排骨)", type: "shopping" },
+        { time: "15:30", name: "DON DON DONKI 唐吉诃德", type: "shopping" },
+        { time: "17:30", name: "师大夜市 (牛魔王牛排)", type: "food" },
+        { time: "19:00", name: "师大夜市 (师园盐酥鸡)", type: "food" },
+        { time: "20:00", name: "师大夜市 (好好味/许记/阿诺)", type: "food" }
       ]
     },
     {
       day: 8,
-      title: "板桥美食 & 台北101",
+      title: "板桥古园与 101 大环线",
       date: "5/30 (Sat)",
       items: [
-        { time: "09:00", name: "黄石市场 (高记生炒鱿鱼)", type: "food" },
-        { time: "11:00", name: "小潘蛋糕坊 (裸装凤凰酥)", type: "shopping" },
-        { time: "14:00", name: "微热山丘思慕昔", type: "shopping" },
-        { time: "16:00", name: "台北101观景台 (雷雕筷)", type: "spot" },
-        { time: "18:00", name: "刁民酸菜鱼 (信义店)", type: "food" },
-        { time: "20:00", name: "福州世祖胡椒饼 (药炖排骨)", type: "food" }
+        { time: "09:30", name: "黄石市场 (高记生炒鱿鱼/炸萝卜糕)", type: "food" },
+        { time: "11:00", name: "小潘蛋糕坊 (手提裸装凤凰酥)", type: "shopping" },
+        { time: "12:00", name: "林本源园邸 (小苏州复古人像)", type: "spot" },
+        { time: "14:00", name: "台北101观景台 (客制化雷雕筷)", type: "spot" },
+        { time: "16:00", name: "信义甜点狩猎 (承继/微热山丘/COMEME)", type: "shopping" },
+        { time: "17:00", name: "信义连通空桥 (都市光影取景)", type: "spot" },
+        { time: "18:00", name: "刁民酸菜鱼 (信义ATT/松仁)", type: "food" },
+        { time: "20:30", name: "饶河夜市 (胡椒饼/药炖排骨)", type: "food" },
+        { time: "21:30", name: "饶河夜市 (加贺鱿鱼大王/小胖子糖饼)", type: "food" }
       ]
     },
     {
@@ -214,7 +219,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
   const [isEditing, setIsEditing] = useState(false);
   const [itineraryDays, setItineraryDays] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('taiwan_trip_itinerary_v4');
+      const saved = localStorage.getItem('taiwan_trip_itinerary_v5');
       return saved ? JSON.parse(saved) : defaultItinerary;
     } catch {
       return defaultItinerary;
@@ -224,7 +229,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
   const [future, setFuture] = useState<any[][]>([]);
 
   React.useEffect(() => {
-    localStorage.setItem('taiwan_trip_itinerary_v4', JSON.stringify(itineraryDays));
+    localStorage.setItem('taiwan_trip_itinerary_v5', JSON.stringify(itineraryDays));
   }, [itineraryDays]);
 
   // --- UNDO / REDO ---

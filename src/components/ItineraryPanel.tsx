@@ -478,14 +478,23 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
               className="block w-full pl-10 pr-10 py-3 bg-gray-50 border-gray-100 focus:bg-white rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-[#2D3436] placeholder-gray-400"
             />
             {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center"
-              >
-                <div className="bg-gray-200 hover:bg-gray-300 rounded-full p-1 transition-colors">
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center gap-2">
+                {searchResults.length > 0 && (
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-gray-400 mr-1">
+                    <span>{searchIndex + 1}/{searchResults.length}</span>
+                    <div className="flex flex-col gap-0.5">
+                      <button onClick={() => scrollToResult(searchIndex - 1)} className="hover:text-indigo-600 bg-gray-200 hover:bg-indigo-50 rounded-sm w-4 h-3 flex items-center justify-center"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="18 15 12 9 6 15"></polyline></svg></button>
+                      <button onClick={() => scrollToResult(searchIndex + 1)} className="hover:text-indigo-600 bg-gray-200 hover:bg-indigo-50 rounded-sm w-4 h-3 flex items-center justify-center"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+                    </div>
+                  </div>
+                )}
+                <button 
+                  onClick={() => setSearchQuery('')}
+                  className="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
+                >
                   <X className="h-3 w-3 text-gray-500" />
-                </div>
-              </button>
+                </button>
+              </div>
             )}
           </div>
         )}

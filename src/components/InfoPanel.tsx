@@ -139,8 +139,38 @@ export default function InfoPanel() {
 
   // Logistics Data
   const [flights] = useState([
-    { id: 1, from: 'KUL', fromFull: 'Kuala Lumpur', to: 'TPE', toFull: 'Taipei Taoyuan', flight: 'AK1510', time: '10:00 - 14:40', status: 'On Time', terminal: 'T1', gate: 'B6', duration: '4h 40m', booking: 'N7X2Y9' },
-    { id: 2, from: 'TPE', fromFull: 'Taipei Taoyuan', to: 'KUL', toFull: 'Kuala Lumpur', flight: 'AK1511', time: '15:55 - 20:40', status: 'Scheduled', terminal: 'T1', gate: 'A4', duration: '4h 45m', booking: 'N7X2Y9' }
+    { 
+      id: 1, 
+      from: 'KUL', fromFull: 'Kuala Lumpur', 
+      to: 'TPE', toFull: 'Taipei Taoyuan', 
+      flight: 'CI722', 
+      airline: 'China Airlines',
+      time: '14:45 - 19:35', 
+      status: 'Scheduled', 
+      terminal: 'T1', 
+      gate: 'TBA', 
+      duration: '4h 50m', 
+      booking: 'N7X2Y9',
+      baggage: '手提 7kg, 托运 23kg (计件制，以实际票价为准)',
+      checkIn: '起飞前3小时开始，起飞前1小时结束',
+      link: 'https://www.flightradar24.com/data/flights/ci722'
+    },
+    { 
+      id: 2, 
+      from: 'TPE', fromFull: 'Taipei Taoyuan', 
+      to: 'KUL', toFull: 'Kuala Lumpur', 
+      flight: 'CI721', 
+      airline: 'China Airlines',
+      time: '08:45 - 13:25', 
+      status: 'Scheduled', 
+      terminal: 'T1', 
+      gate: 'TBA', 
+      duration: '4h 40m', 
+      booking: 'N7X2Y9',
+      baggage: '手提 7kg, 托运 23kg (计件制，以实际票价为准)',
+      checkIn: '起飞前3小时开始，起飞前1小时结束',
+      link: 'https://www.flightradar24.com/data/flights/ci721'
+    }
   ]);
   const [expandedFlight, setExpandedFlight] = useState<number | null>(null);
 
@@ -373,22 +403,41 @@ export default function InfoPanel() {
                   </div>
                   
                   {expandedFlight === f.id && (
-                    <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-400 block text-[10px] uppercase tracking-wider mb-1">Status</span>
-                        <span className={`font-semibold ${f.status === 'On Time' ? 'text-green-600' : 'text-blue-600'}`}>{f.status}</span>
+                    <div className="mt-4 pt-4 border-t border-gray-100 animate-in slide-in-from-top-1 duration-200">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
+                        <div>
+                          <span className="text-gray-400 block text-[10px] uppercase tracking-wider mb-1">Status</span>
+                          <span className={`font-semibold ${f.status === 'On Time' ? 'text-green-600' : 'text-blue-600'}`}>{f.status}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 block text-[10px] uppercase tracking-wider mb-1">Terminal/Gate</span>
+                          <span className="font-semibold">{f.terminal} / {f.gate}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 block text-[10px] uppercase tracking-wider mb-1">Duration</span>
+                          <span className="font-semibold text-gray-800">{f.duration}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 block text-[10px] uppercase tracking-wider mb-1">Booking Ref</span>
+                          <span className="font-mono font-semibold text-gray-800">{f.booking}</span>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-gray-400 block text-[10px] uppercase tracking-wider mb-1">Terminal/Gate</span>
-                        <span className="font-semibold">{f.terminal} / {f.gate}</span>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs mb-4">
+                        <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                           <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">💼 行李额度 (Baggage)</div>
+                           <p className="text-gray-700 font-medium leading-relaxed">{(f as any).baggage}</p>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                           <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">🎫 报到时间 (Check-in)</div>
+                           <p className="text-gray-700 font-medium leading-relaxed">{(f as any).checkIn}</p>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-gray-400 block text-[10px] uppercase tracking-wider mb-1">Duration</span>
-                        <span className="font-semibold text-gray-800">{f.duration}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400 block text-[10px] uppercase tracking-wider mb-1">Booking Ref</span>
-                        <span className="font-mono font-semibold text-gray-800">{f.booking}</span>
+
+                      <div className="flex">
+                        <a href={(f as any).link} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-blue-600 font-bold text-xs hover:underline bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100">
+                          <Plane className="w-3 h-3" /> 实时航班追踪 (Flightradar24)
+                        </a>
                       </div>
                     </div>
                   )}

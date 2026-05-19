@@ -88,16 +88,17 @@ const defaultItinerary = [
     },
     {
       day: 3,
-      title: "前进日月潭",
+      title: "告别台中，挺进日月潭",
       date: "5/25 (Mon)",
       items: [
-        { time: "08:00", name: "一心古早味蛋餅 (早餐)", type: "food" },
-        { time: "09:00", name: "搭乘 6670 路巴士前往日月潭", type: "transport" },
-        { time: "11:00", name: "水社码头 -> 伊达邵码头 (搭船)", type: "transport" },
-        { time: "12:00", name: "入住 伊達邵渡假旅店", type: "hotel" },
-        { time: "13:00", name: "伊达邵美食街 (饭饭鸡翅、年記、茶池屋)", type: "food" },
-        { time: "15:00", name: "日月潭环湖", type: "spot" },
-        { time: "18:00", name: "東東刈包 & 刘山哥 石板烤山豬肉", type: "food" }
+        { time: "09:30", name: "台中东旅享用早餐，打包行李退房", type: "hotel" },
+        { time: "10:30", name: "搭 Uber 前往高铁台中站/干城站", type: "transport" },
+        { time: "11:00", name: "搭乘台湾好行 6670 路线直达日月潭水社", type: "transport" },
+        { time: "13:00", name: "水社 ➔ 伊达邵 (接驳方案评估)", type: "transport" },
+        { time: "14:00", name: "入住 伊達邵渡假旅店 (现金支付)", type: "hotel" },
+        { time: "15:00", name: "伊达邵码头搭乘游船 (Klook凭证)", type: "spot" },
+        { time: "16:30", name: "玄光码头 (阿嬷香菇茶叶蛋 / 赏倒影)", type: "food" },
+        { time: "18:30", name: "伊达邵老街 (烤香鱼/糯米粑粑/涌泉豆花)", type: "food" }
       ]
     },
     {

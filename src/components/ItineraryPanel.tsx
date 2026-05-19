@@ -185,24 +185,30 @@ const defaultItinerary = [
     },
     {
       day: 9,
-      title: "阜杭豆浆 & 中壢巡礼",
+      title: "大采购收网与中坜轰炸",
       date: "5/31 (Sun)",
       items: [
-        { time: "07:00", name: "阜杭豆浆 (厚饼)", type: "food" },
-        { time: "10:30", name: "Comeme 蛋塔 (新光三越A8)", type: "food" },
-        { time: "12:00", name: "京站时尚广场 (GU & 扫货)", type: "shopping" },
-        { time: "15:00", name: "前往中壢 (入住 Taoyuan Gateway)", type: "transport" },
-        { time: "18:00", name: "简师父麻辣臭豆腐 (瑞记、日宝)", type: "food" },
-        { time: "21:00", name: "GLORIA OUTLETS 华泰名品城", type: "shopping" }
+        { time: "07:30", name: "阜杭豆浆 (厚烧饼夹蛋/咸豆浆)", type: "food" },
+        { time: "10:00", name: "京站时尚广场 (GU / Mia C'bon 扫货)", type: "shopping" },
+        { time: "12:00", name: "京站地下美食街 (继光香香鸡 或 海寿司)", type: "food" },
+        { time: "13:00", name: "搭乘 Uber 转移至城市商旅桃园航空馆", type: "transport" },
+        { time: "15:00", name: "华泰名品城 GLORIA OUTLETS (最后扫货)", type: "shopping" },
+        { time: "17:30", name: "张丰盛商行 (花生芝麻双色霜淇淋)", type: "food" },
+        { time: "18:30", name: "中坜夜市 (简师父臭豆腐/瑞记排骨酥)", type: "food" },
+        { time: "20:00", name: "中坜夜市 (曾记水煎包/混蛋爆虾/温记豆花)", type: "food" },
+        { time: "21:30", name: "第三航厦咖啡 (飞机降落压迫感)", type: "spot" }
       ]
     },
     {
       day: 10,
-      title: "平安返家",
+      title: "极速撤离",
       date: "6/1 (Mon)",
       items: [
-        { time: "06:45", name: "前往桃园机场 (车程 15 分钟)", type: "transport" },
-        { time: "08:45", name: "搭乘中华航空 CI 721", type: "transport" }
+        { time: "06:00", name: "退房 城市商旅桃园航空馆", type: "hotel" },
+        { time: "06:30", name: "搭乘专车接送前往桃园机场", type: "transport" },
+        { time: "06:45", name: "抵达桃园机场 T1 (办理托运，确保不超重)", type: "transport" },
+        { time: "08:45", name: "搭乘中华航空 CI 0721 准时起飞", type: "transport" },
+        { time: "13:25", name: "落地吉隆坡国际机场 (KUL) - 行动圆满结束", type: "spot" }
       ]
     }
 ];
@@ -219,7 +225,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
   const [isEditing, setIsEditing] = useState(false);
   const [itineraryDays, setItineraryDays] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('taiwan_trip_itinerary_v5');
+      const saved = localStorage.getItem('taiwan_trip_itinerary_v6');
       return saved ? JSON.parse(saved) : defaultItinerary;
     } catch {
       return defaultItinerary;
@@ -229,7 +235,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
   const [future, setFuture] = useState<any[][]>([]);
 
   React.useEffect(() => {
-    localStorage.setItem('taiwan_trip_itinerary_v5', JSON.stringify(itineraryDays));
+    localStorage.setItem('taiwan_trip_itinerary_v6', JSON.stringify(itineraryDays));
   }, [itineraryDays]);
 
   // --- UNDO / REDO ---

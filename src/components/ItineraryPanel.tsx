@@ -56,16 +56,7 @@ const getTypeIcon = (type: string) => {
   }
 };
 
-export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (loc: any) => void }) {
-  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
-
-  const toggleExpand = (id: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setExpandedItems(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  // Full 10-day itinerary data from the provided PDF.
-  const [itineraryDays] = useState([
+const defaultItinerary = [
     {
       day: 1,
       title: "抵达台中 & 旱溪夜市",
@@ -190,14 +181,118 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
         { time: "08:45", name: "搭乘中华航空 CI 721", type: "transport" }
       ]
     }
-  ]);
+];
+
+export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (loc: any) => void }) {
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+
+  const toggleExpand = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setExpandedItems(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  // --- STATE & PERSISTENCE ---
+  const [isEditing, setIsEditing] = useState(false);
+  const [itineraryDays, setItineraryDays] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('taiwan_trip_itinerary_v2');
+      return saved ? JSON.parse(saved) : defaultItinerary;
+    } catch {
+      return defaultItinerary;
+    }
+  });
+  const [history, setHistory] = useState<any[][]>([]);
+  const [future, setFuture] = useState<any[][]>([]);
+
+  React.useEffect(() => {
+    localStorage.setItem('taiwan_trip_itinerary_v2', JSON.stringify(itineraryDays));
+  }, [itineraryDays]);
+
+  // --- UNDO / REDO ---
+  const saveState = (newState: any[]) => {
+    setHistory(prev => [...prev, itineraryDays]);
+    setFuture([]);
+    setItineraryDays(newState);
+  };
+
+  const handleUndo = () => {
+    if (history.length === 0) return;
+    const prev = history[history.length - 1];
+    setFuture(f => [itineraryDays, ...f]);
+    setHistory(h => h.slice(0, h.length - 1));
+    setItineraryDays(prev);
+  };
+
+  const handleRedo = () => {
+    if (future.length === 0) return;
+    const next = future[0];
+    setHistory(h => [...h, itineraryDays]);
+    setFuture(f => f.slice(1));
+    setItineraryDays(next);
+  };
+
+  // --- ACTIONS ---
+  const updateDay = (dIdx: number, updates: any) => {
+    const next = [...itineraryDays];
+    next[dIdx] = { ...next[dIdx], ...updates };
+    saveState(next);
+  };
+
+  const addDay = () => {
+    const next = [...itineraryDays];
+    const newDayNum = next.length > 0 ? next[next.length - 1].day + 1 : 1;
+    next.push({ day: newDayNum, title: "新行程", date: "日期", items: [] });
+    saveState(next);
+  };
+
+  const deleteDay = (dIdx: number) => {
+    if (window.confirm('确定要删除这一天吗？')) {
+      const next = [...itineraryDays];
+      next.splice(dIdx, 1);
+      // Renumber days
+      next.forEach((d, i) => d.day = i + 1);
+      saveState(next);
+    }
+  };
+
+  const addItem = (dIdx: number) => {
+    const next = [...itineraryDays];
+    next[dIdx].items = [...next[dIdx].items, { time: "12:00", name: "新节点", type: "spot" }];
+    // Sort items by time
+    next[dIdx].items.sort((a: any, b: any) => a.time.localeCompare(b.time));
+    saveState(next);
+  };
+
+  const updateItem = (dIdx: number, iIdx: number, updates: any) => {
+    const next = [...itineraryDays];
+    const items = [...next[dIdx].items];
+    items[iIdx] = { ...items[iIdx], ...updates };
+    
+    // Auto sort if time changes
+    if (updates.time !== undefined) {
+      items.sort((a: any, b: any) => a.time.localeCompare(b.time));
+    }
+    
+    next[dIdx].items = items;
+    saveState(next);
+  };
+
+  const deleteItem = (dIdx: number, iIdx: number) => {
+    if (window.confirm('确定要删除这个节点吗？')) {
+      const next = [...itineraryDays];
+      const items = [...next[dIdx].items];
+      items.splice(iIdx, 1);
+      next[dIdx].items = items;
+      saveState(next);
+    }
+  };
 
   const itineraryByDay = React.useMemo(() => {
     return itineraryDays.map(day => {
       const groups: { regionId: string | null; regionName: string | null; items: any[]; nearby: any[] }[] = [];
       let currentGroup: { regionId: string | null; regionName: string | null; items: any[]; nearby: any[] } | null = null;
 
-      day.items.forEach(item => {
+      day.items.forEach((item: any, originalIndex: number) => {
         const matched = findLocationByName(item.name);
         const regionId = matched?.regionId || null;
         const regionName = matched?.regionName || null;
@@ -212,7 +307,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
           };
           groups.push(currentGroup);
         }
-        currentGroup.items.push({ ...item, matched });
+        currentGroup.items.push({ ...item, matched, originalIndex });
       });
 
       return { ...day, groups };
@@ -225,6 +320,37 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
         <h3 className="font-black text-2xl flex items-center gap-2 text-[#2D3436] tracking-tight">
           <Calendar className="w-6 h-6 text-[#2D3436]" /> 智能互动行程
         </h3>
+        
+        {/* Editor Controls */}
+        <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-100">
+          <button 
+            onClick={handleUndo} 
+            disabled={history.length === 0}
+            className="p-2 rounded-lg text-gray-500 hover:bg-white hover:text-gray-800 disabled:opacity-30 transition-all shadow-sm disabled:shadow-none"
+            title="撤销 (Undo)"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+          </button>
+          <button 
+            onClick={handleRedo} 
+            disabled={future.length === 0}
+            className="p-2 rounded-lg text-gray-500 hover:bg-white hover:text-gray-800 disabled:opacity-30 transition-all shadow-sm disabled:shadow-none"
+            title="重做 (Redo)"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
+          </button>
+          <div className="w-px h-6 bg-gray-200 mx-1"></div>
+          <button 
+            onClick={() => setIsEditing(!isEditing)}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm",
+              isEditing ? "bg-indigo-600 text-white" : "bg-white text-gray-700 hover:bg-gray-50"
+            )}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+            {isEditing ? '完成编辑' : '编辑行程'}
+          </button>
+        </div>
       </div>
 
       <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-xl mb-6 flex items-start gap-4">
@@ -247,11 +373,36 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
                 <span className="text-[10px] font-black opacity-60 leading-none">DAY</span>
                 <span className="text-xl font-black leading-none">{day.day}</span>
               </div>
-              <div>
-                <div className="font-black text-[#2D3436] text-xl leading-tight">{day.title}</div>
-                <div className="text-xs font-bold text-gray-400 tracking-widest flex items-center gap-2 mt-1 uppercase">
-                  <Calendar className="w-3.5 h-3.5" /> {day.date}
-                </div>
+              <div className="flex-1">
+                {isEditing ? (
+                  <div className="flex flex-col gap-1.5 w-full">
+                    <input 
+                      type="text" 
+                      value={day.title} 
+                      onChange={(e) => updateDay(dIdx, { title: e.target.value })}
+                      className="font-black text-[#2D3436] text-lg sm:text-xl leading-tight bg-white border border-gray-200 rounded-lg px-3 py-1 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all w-full"
+                    />
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                      <input 
+                        type="text" 
+                        value={day.date} 
+                        onChange={(e) => updateDay(dIdx, { date: e.target.value })}
+                        className="text-xs font-bold text-gray-600 tracking-widest uppercase bg-white border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all flex-1"
+                      />
+                      <button onClick={() => deleteDay(dIdx)} className="text-red-500 hover:text-red-700 bg-red-50 p-1.5 rounded-lg border border-red-100 flex-shrink-0">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="font-black text-[#2D3436] text-xl leading-tight">{day.title}</div>
+                    <div className="text-xs font-bold text-gray-400 tracking-widest flex items-center gap-2 mt-1 uppercase">
+                      <Calendar className="w-3.5 h-3.5" /> {day.date}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -270,28 +421,64 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
                   )}
 
                   <div className="space-y-4">
-                    {group.items.map((item, iIdx) => (
+                    {group.items.map((item, iIdx) => {
+                      const actualIdx = item.originalIndex;
+                      return (
                       <div key={iIdx} className="relative flex flex-col sm:flex-row sm:items-center gap-2">
                         {/* Dot */}
                         <div className="absolute left-[-22px] top-1.5 w-3 h-3 rounded-full bg-white border-2 border-[#2D3436] z-10" />
                         
-                        <div className="w-12 flex-shrink-0 text-[10px] font-black text-gray-300 font-mono pt-0.5 uppercase tracking-tighter">
-                          {item.time}
-                        </div>
-                        
-                        {(() => {
-                          const itemId = `${dIdx}-${gIdx}-${iIdx}`;
-                          const isExpanded = expandedItems[itemId];
-                          const matched = item.matched;
+                        {isEditing ? (
+                          <div className="flex-1 bg-white border border-indigo-200 rounded-2xl p-3 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                            <input 
+                              type="time"
+                              value={item.time}
+                              onChange={(e) => updateItem(dIdx, actualIdx, { time: e.target.value })}
+                              className="w-24 text-xs font-black text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-indigo-500 transition-all"
+                            />
+                            <div className="flex-1 flex flex-col sm:flex-row gap-2 w-full">
+                              <input 
+                                type="text"
+                                value={item.name}
+                                onChange={(e) => updateItem(dIdx, actualIdx, { name: e.target.value })}
+                                placeholder="行程名称"
+                                className="flex-1 text-sm font-bold text-gray-800 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-indigo-500 transition-all"
+                              />
+                              <select
+                                value={item.type || 'spot'}
+                                onChange={(e) => updateItem(dIdx, actualIdx, { type: e.target.value })}
+                                className="w-full sm:w-28 text-xs font-bold text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-indigo-500 transition-all"
+                              >
+                                <option value="spot">📍 景点</option>
+                                <option value="food">🍽️ 餐饮</option>
+                                <option value="transport">🚗 交通</option>
+                                <option value="shopping">🛍️ 购物</option>
+                                <option value="hotel">🏨 住宿</option>
+                              </select>
+                            </div>
+                            <button onClick={() => deleteItem(dIdx, actualIdx)} className="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded-lg border border-red-100 flex-shrink-0 self-end sm:self-auto">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="w-12 flex-shrink-0 text-[10px] font-black text-gray-300 font-mono pt-0.5 uppercase tracking-tighter">
+                              {item.time}
+                            </div>
+                            
+                            {(() => {
+                              const itemId = `${dIdx}-${gIdx}-${iIdx}`;
+                              const isExpanded = expandedItems[itemId];
+                              const matched = item.matched;
 
-                          return (
-                            <div 
-                              className={cn(
-                                "flex-1 bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all group cursor-pointer overflow-hidden",
-                                isExpanded && "border-indigo-100 shadow-lg ring-1 ring-indigo-50"
-                              )} 
-                              onClick={() => toggleExpand(itemId)}
-                            >
+                              return (
+                                <div 
+                                  className={cn(
+                                    "flex-1 bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all group cursor-pointer overflow-hidden",
+                                    isExpanded && "border-indigo-100 shadow-lg ring-1 ring-indigo-50"
+                                  )} 
+                                  onClick={() => toggleExpand(itemId)}
+                                >
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2 mb-1">
@@ -431,8 +618,11 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
                             </div>
                           );
                         })()}
+                          </>
+                        )}
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {/* Nearby Recommendations for this Region */}
@@ -458,9 +648,30 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
                 </div>
               ))}
             </div>
+            {isEditing && (
+              <div className="pl-4 sm:pl-6 mt-4">
+                <button 
+                  onClick={() => addItem(dIdx)} 
+                  className="w-full py-3 border-2 border-dashed border-gray-200 rounded-2xl text-gray-500 font-bold hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50/50 transition-all flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-4 h-4" /> 新增行程节点
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
+
+      {isEditing && (
+        <div className="mt-8">
+          <button 
+            onClick={addDay} 
+            className="w-full py-4 bg-white border border-gray-200 shadow-sm rounded-2xl text-[#2D3436] font-black text-lg hover:border-[#2D3436] hover:shadow-md transition-all flex items-center justify-center gap-2"
+          >
+            <Plus className="w-5 h-5" /> 增加一天 (Add Day)
+          </button>
+        </div>
+      )}
     </div>
   );
 }

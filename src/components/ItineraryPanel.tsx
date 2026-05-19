@@ -291,9 +291,6 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
       if (matchedId.startsWith('item-')) {
         const parts = matchedId.split('-');
         setExpandedItems(prev => prev[matchedId] ? prev : { ...prev, [matchedId]: true });
-        setExpandedDays(prev => prev[parts[1]] ? prev : { ...prev, [parts[1]]: true });
-      } else {
-        setExpandedDays(prev => prev[matchedId.split('-')[1]] ? prev : { ...prev, [matchedId.split('-')[1]]: true });
       }
     }
   };

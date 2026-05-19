@@ -18,7 +18,8 @@ import {
   Lightbulb,
   RotateCcw,
   Undo2,
-  Redo2
+  Redo2,
+  CheckCircle2
 } from 'lucide-react';
 import { regions } from '../data';
 

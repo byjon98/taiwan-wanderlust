@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Wallet, CreditCard, Plus, X, Calculator, ArrowRightLeft, History, Search, Undo2, Navigation, Flame, RefreshCcw } from 'lucide-react';
+import { Wallet, CreditCard, Plus, X, Calculator, ArrowRightLeft, History, Search, Undo2, Navigation, Flame, RefreshCcw, CheckCircle2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { Expense, PAYMENT_METHODS, CATEGORIES, BENEFICIARIES, ZONES, CONSTANTS, INITIAL_SUNK_COSTS } from '../data-expense';
@@ -25,7 +25,9 @@ export default function ExpensePanel() {
   const [entrySubject, setEntrySubject] = useState('');
   const [entryAmount, setEntryAmount] = useState('');
   const [entryCurrency, setEntryCurrency] = useState<'TWD' | 'MYR'>('TWD');
-  const [entryPaidBy, setEntryPaidBy] = useState<Expense['paymentMethod']>('cash_jon');
+  const [entryAdvancedBy, setEntryAdvancedBy] = useState<'jon_100'|'june_100'|'split_50'|'custom'>('jon_100');
+  const [customAdvancedJonAmount, setCustomAdvancedJonAmount] = useState('');
+  const [entryPaidBy, setEntryPaidBy] = useState<Expense['paymentMethod']>('cash');
   const [entryCategory, setEntryCategory] = useState('');
   const [entryBeneficiary, setEntryBeneficiary] = useState<'jon_100'|'june_100'|'split_50'|'custom'>('split_50');
   const [entryZone, setEntryZone] = useState('taipei');
@@ -111,18 +113,24 @@ export default function ExpensePanel() {
 
       // Tracking physical pools
       if (e.isTransfer && e.transferTo) {
-        if (e.paymentMethod === 'cash_jon') jonCashSpentTwd += amountTwd;
-        if (e.paymentMethod === 'cash_june') juneCashSpentTwd += amountTwd;
+        if (e.paymentMethod === 'cash') {
+            jonCashSpentTwd += (e.currency === 'TWD' ? e.paidByJon : e.paidByJon / exchangeRate);
+            juneCashSpentTwd += (e.currency === 'TWD' ? e.paidByJune : e.paidByJune / exchangeRate);
+        }
         if (e.paymentMethod === 'card') cardSpentMyr += amountMyr;
         if (e.paymentMethod === 'myr_cash') myrCashSpent += amountMyr;
 
         if (e.transferTo === 'easycard_jon') jonEasyCardTopupTwd += amountTwd;
         if (e.transferTo === 'easycard_june') juneEasyCardTopupTwd += amountTwd;
       } else if (!e.isSettlement) {
-        if (e.paymentMethod === 'cash_jon') jonCashSpentTwd += amountTwd;
-        if (e.paymentMethod === 'cash_june') juneCashSpentTwd += amountTwd;
-        if (e.paymentMethod === 'easycard_jon') jonEasyCardSpentTwd += amountTwd;
-        if (e.paymentMethod === 'easycard_june') juneEasyCardSpentTwd += amountTwd;
+        if (e.paymentMethod === 'cash') {
+            jonCashSpentTwd += (e.currency === 'TWD' ? e.paidByJon : e.paidByJon / exchangeRate);
+            juneCashSpentTwd += (e.currency === 'TWD' ? e.paidByJune : e.paidByJune / exchangeRate);
+        }
+        if (e.paymentMethod === 'easycard') {
+            jonEasyCardSpentTwd += (e.currency === 'TWD' ? e.paidByJon : e.paidByJon / exchangeRate);
+            juneEasyCardSpentTwd += (e.currency === 'TWD' ? e.paidByJune : e.paidByJune / exchangeRate);
+        }
         if (e.paymentMethod === 'card') cardSpentMyr += amountMyr;
         if (e.paymentMethod === 'myr_cash') myrCashSpent += amountMyr;
       }
@@ -161,7 +169,7 @@ export default function ExpensePanel() {
     }, 0);
   }, [filteredExpenses, exchangeRate, searchQuery]);
 
-  // Daily Burn Rate (Vertical)
+  // Daily Burn Rate (Vertical) grouped by main category
   const dailyBurn = useMemo(() => {
     const days: Record<number, Record<string, number>> = {};
     for(let i = 1; i <= CONSTANTS.TOTAL_DAYS; i++) days[i] = {};
@@ -170,10 +178,29 @@ export default function ExpensePanel() {
       if (e.timestamp < 100 || e.isTransfer || e.isSettlement) return; // skip initial sunk costs and transfers
       const amountTwd = e.currency === 'TWD' ? e.amount : e.amount / exchangeRate;
       if (!days[e.day]) days[e.day] = {};
-      days[e.day][e.category] = (days[e.day][e.category] || 0) + amountTwd;
+      
+      let groupName = '杂项组';
+      for (const group of CATEGORIES) {
+        if (group.items.some(i => i.id === e.category)) {
+          groupName = group.group;
+          break;
+        }
+      }
+      
+      days[e.day][groupName] = (days[e.day][groupName] || 0) + amountTwd;
     });
     return days;
   }, [expenses, exchangeRate]);
+
+  const getGroupColor = (group: string) => {
+    const colors: Record<string, string> = {
+      '饮食组': '#FF9F43',
+      '交通组': '#546DE5',
+      '采买与伴手礼组': '#cf6a87',
+      '杂项组': '#a4b0be'
+    };
+    return colors[group] || '#d1d8e0';
+  };
 
   // Submit Expense
   const handleSubmit = () => {
@@ -183,13 +210,16 @@ export default function ExpensePanel() {
     let paidByJon = 0;
     let paidByJune = 0;
     
-    if (entryPaidBy === 'cash_jon' || entryPaidBy === 'easycard_jon') paidByJon = amountNum;
-    else if (entryPaidBy === 'cash_june' || entryPaidBy === 'easycard_june') paidByJune = amountNum;
-    else {
-      // card or myr_cash defaults to 50/50 paid advance if not specified, but let's assume Jon swiped the card for tracking unless specified.
-      // Actually, if it's card, we can assume it's joint advance (split_50 paidBy), but usually someone physically taps.
-      // Let's just assign card payments 50/50 advance to keep it neutral, OR 100% Jon if Jon's card. Let's assume Jon's card.
-      paidByJon = amountNum; 
+    if (entryAdvancedBy === 'jon_100') {
+      paidByJon = amountNum;
+    } else if (entryAdvancedBy === 'june_100') {
+      paidByJune = amountNum;
+    } else if (entryAdvancedBy === 'split_50') {
+      paidByJon = amountNum / 2;
+      paidByJune = amountNum / 2;
+    } else {
+      paidByJon = parseFloat(customAdvancedJonAmount) || 0;
+      paidByJune = amountNum - paidByJon;
     }
 
     let forJon = 0;
@@ -363,7 +393,10 @@ export default function ExpensePanel() {
             <div className="text-[9px] font-bold text-gray-400 mb-0.5 uppercase tracking-widest leading-tight">
               Budget (10K) - Spent ({stats.totalSpentMyr.toFixed(0)}) = Remaining
             </div>
-            <div className="text-xl font-black text-indigo-600">MYR {(10000 - stats.totalSpentMyr).toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+            <div className="text-xl font-black text-indigo-600 flex items-baseline justify-end gap-2">
+              MYR {(10000 - stats.totalSpentMyr).toLocaleString(undefined, {maximumFractionDigits:0})}
+              <span className="text-xs font-bold text-gray-400">≈ NT$ {((10000 - stats.totalSpentMyr)/exchangeRate).toLocaleString(undefined, {maximumFractionDigits:0})}</span>
+            </div>
           </div>
         </div>
 
@@ -506,9 +539,12 @@ export default function ExpensePanel() {
             </div>
 
             {searchQuery.trim() && filteredSubtotal !== null && (
-              <div className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl text-xs font-bold border border-indigo-100 flex justify-between items-center">
+              <div className="bg-indigo-50 text-indigo-700 px-4 py-3 rounded-xl text-xs font-bold border border-indigo-100 flex justify-between items-center">
                 <span>过滤结果总计 (剔除充值):</span>
-                <span>NT$ {filteredSubtotal.toLocaleString(undefined, {maximumFractionDigits:0})}</span>
+                <div className="text-right">
+                  <div className="text-sm font-black">NT$ {filteredSubtotal.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                  <div className="text-[10px] font-bold text-indigo-400 mt-0.5">≈ MYR {(filteredSubtotal * exchangeRate).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                </div>
               </div>
             )}
 
@@ -623,10 +659,10 @@ export default function ExpensePanel() {
                       </div>
                       <div className="w-full max-w-[24px] bg-gray-50 rounded-t-md flex flex-col justify-end overflow-hidden relative" style={{ height: '100%' }}>
                         <div className="w-full flex flex-col justify-end" style={{ height: `${heightPct}%` }}>
-                          {Object.entries(dayCats).sort((a,b)=>b[1]-a[1]).map(([catId, amount]) => {
+                          {Object.entries(dayCats).sort((a,b)=>b[1]-a[1]).map(([groupName, amount]) => {
                             const segmentPct = (amount / totalSpent) * 100;
                             return (
-                              <div key={catId} style={{ height: `${segmentPct}%`, backgroundColor: getCategoryColor(catId) }} className="w-full" />
+                              <div key={groupName} style={{ height: `${segmentPct}%`, backgroundColor: getGroupColor(groupName) }} className="w-full" />
                             );
                           })}
                         </div>
@@ -638,11 +674,11 @@ export default function ExpensePanel() {
               </div>
             </div>
             
-            <div className="flex flex-wrap gap-3 px-2 justify-center">
-              {['nightmarket', 'restaurant', 'uber', 'transit', 'shopping_life', 'tickets'].map(id => (
-                <div key={id} className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getCategoryColor(id) }} />
-                  {getCategoryLabel(id).split(' ')[1] || getCategoryLabel(id)}
+            <div className="flex flex-wrap gap-4 px-2 justify-center pt-2">
+              {CATEGORIES.map(g => (
+                <div key={g.group} className="flex items-center gap-1.5 text-[11px] font-bold text-gray-600">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getGroupColor(g.group) }} />
+                  {g.group}
                 </div>
               ))}
             </div>
@@ -722,9 +758,42 @@ export default function ExpensePanel() {
 
               <div className="space-y-6">
                 
-                {/* 1. Who Paid (Deducts Pool) */}
+                {/* 1. Who Advanced */}
                 <div>
-                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">1. 谁垫付了款项 (扣谁的资金池)</div>
+                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">1. 谁先垫付了款项 (影响各自资金池的扣减比例)</div>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {BENEFICIARIES.map(p => (
+                      <button 
+                        key={`adv_${p.id}`}
+                        onClick={() => setEntryAdvancedBy(p.id as any)}
+                        className={cn("px-3 py-2 rounded-xl text-[11px] font-bold border", 
+                          entryAdvancedBy === p.id ? "bg-black text-white border-black" : "bg-white text-gray-600 border-gray-200"
+                        )}
+                      >
+                        {p.icon} {p.label.replace('100% ', '').replace('Jon', 'Jon 现金垫付').replace('June', 'June 现金垫付')}
+                      </button>
+                    ))}
+                  </div>
+                  {entryAdvancedBy === 'custom' && (
+                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex items-center gap-3">
+                      <span className="text-xs font-bold text-gray-700">👦🏻 Jon 垫付:</span>
+                      <input 
+                        type="number" 
+                        value={customAdvancedJonAmount}
+                        onChange={e => setCustomAdvancedJonAmount(e.target.value)}
+                        placeholder="0"
+                        className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-bold text-gray-800 outline-none focus:border-black"
+                      />
+                      <span className="text-xs font-bold text-gray-500">
+                        (剩 👧🏻: {entryAmount ? (parseFloat(entryAmount) - (parseFloat(customAdvancedJonAmount)||0)).toFixed(2) : 0})
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Payment Method */}
+                <div>
+                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">2. 怎么支付 (决定扣哪个实体钱包)</div>
                   <div className="flex flex-wrap gap-2">
                     {PAYMENT_METHODS.map(m => (
                       <button 
@@ -740,9 +809,9 @@ export default function ExpensePanel() {
                   </div>
                 </div>
 
-                {/* 2. For Who (Beneficiary / Debt) */}
+                {/* 3. For Who (Beneficiary / Debt) */}
                 <div>
-                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">2. 这笔钱该算谁的 (影响欠款结算)</div>
+                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">3. 这笔钱该算谁的 (影响欠款结算)</div>
                   <div className="flex flex-wrap gap-2 mb-3">
                     {BENEFICIARIES.map(p => (
                       <button 
@@ -773,9 +842,9 @@ export default function ExpensePanel() {
                   )}
                 </div>
 
-                {/* 3. Category */}
+                {/* 4. Category */}
                 <div>
-                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">3. 消费类别</div>
+                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">4. 消费类别</div>
                   <div className="space-y-4">
                     {CATEGORIES.map((group, idx) => (
                       <div key={idx}>
@@ -798,10 +867,10 @@ export default function ExpensePanel() {
                   </div>
                 </div>
 
-                {/* 4. GPS */}
+                {/* 5. GPS */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">4. 战区 (GPS)</div>
+                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">5. 战区 (GPS)</div>
                     <button onClick={requestGPS} className="text-[10px] font-bold text-indigo-500 flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded-md">
                       <Navigation className="w-3 h-3" /> 获取当前位置
                     </button>
@@ -868,21 +937,21 @@ export default function ExpensePanel() {
               <div>
                 <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">资金来源 (扣减谁的实体钱包)</div>
                 <div className="flex gap-2">
-                  <button onClick={() => setTopUpSource('cash_jon')} className={cn("flex-1 py-2 rounded-xl text-xs font-bold border", topUpSource === 'cash_jon' ? "bg-black text-white border-black" : "bg-white text-gray-600 border-gray-200")}>👦🏻 Jon 现金</button>
-                  <button onClick={() => setTopUpSource('cash_june')} className={cn("flex-1 py-2 rounded-xl text-xs font-bold border", topUpSource === 'cash_june' ? "bg-black text-white border-black" : "bg-white text-gray-600 border-gray-200")}>👧🏻 June 现金</button>
-                  <button onClick={() => setTopUpSource('card')} className={cn("flex-1 py-2 rounded-xl text-xs font-bold border", topUpSource === 'card' ? "bg-black text-white border-black" : "bg-white text-gray-600 border-gray-200")}>💳 信用卡</button>
+                  <button onClick={() => setTopUpSource('cash_jon')} className={cn("flex-1 py-3 rounded-xl text-xs font-bold border", topUpSource === 'cash_jon' ? "bg-black text-white border-black" : "bg-white text-gray-600 border-gray-200")}>👦🏻 Jon 现金</button>
+                  <button onClick={() => setTopUpSource('cash_june')} className={cn("flex-1 py-3 rounded-xl text-xs font-bold border", topUpSource === 'cash_june' ? "bg-black text-white border-black" : "bg-white text-gray-600 border-gray-200")}>👧🏻 June 现金</button>
+                  <button onClick={() => setTopUpSource('card')} className={cn("flex-1 py-3 rounded-xl text-xs font-bold border", topUpSource === 'card' ? "bg-black text-white border-black" : "bg-white text-gray-600 border-gray-200")}>💳 信用卡</button>
                 </div>
               </div>
 
               <div>
                 <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">充入目标 (增加谁的悠游卡)</div>
                 <div className="flex gap-2">
-                  <button onClick={() => setTopUpTarget('easycard_jon')} className={cn("flex-1 py-2 rounded-xl text-xs font-bold border", topUpTarget === 'easycard_jon' ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-gray-600 border-gray-200")}>👦🏻 Jon 悠游卡</button>
-                  <button onClick={() => setTopUpTarget('easycard_june')} className={cn("flex-1 py-2 rounded-xl text-xs font-bold border", topUpTarget === 'easycard_june' ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-gray-600 border-gray-200")}>👧🏻 June 悠游卡</button>
+                  <button onClick={() => setTopUpTarget('easycard_jon')} className={cn("flex-1 py-3 rounded-xl text-xs font-bold border", topUpTarget === 'easycard_jon' ? "bg-black text-white border-black" : "bg-white text-gray-600 border-gray-200")}>👦🏻 Jon 悠游卡</button>
+                  <button onClick={() => setTopUpTarget('easycard_june')} className={cn("flex-1 py-3 rounded-xl text-xs font-bold border", topUpTarget === 'easycard_june' ? "bg-black text-white border-black" : "bg-white text-gray-600 border-gray-200")}>👧🏻 June 悠游卡</button>
                 </div>
               </div>
 
-              <button onClick={handleTopUpSubmit} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg active:scale-95 transition-transform mt-4">
+              <button onClick={handleTopUpSubmit} className="w-full py-4 bg-black text-white rounded-2xl font-black text-lg active:scale-95 transition-transform mt-4">
                 确认充值
               </button>
               <p className="text-[10px] text-gray-400 text-center font-medium">充值属于资金转移，不会计入总消费 (Spent) 之中。</p>

@@ -15,7 +15,8 @@ import {
   ExternalLink,
   MessageSquare,
   AlertTriangle,
-  Lightbulb
+  Lightbulb,
+  RotateCcw
 } from 'lucide-react';
 import { regions } from '../data';
 
@@ -231,6 +232,34 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
     setItineraryDays(next);
   };
 
+  const [restoredDayToast, setRestoredDayToast] = useState<{ dIdx: number, backup: any } | null>(null);
+
+  const restoreDayToDefault = (dIdx: number) => {
+    if (dIdx < defaultItinerary.length) {
+      if (window.confirm(`确定要将 Day ${itineraryDays[dIdx].day} 恢复为系统的默认行程吗？这会覆盖您对这一天的所有修改。`)) {
+        setRestoredDayToast({ dIdx, backup: JSON.parse(JSON.stringify(itineraryDays[dIdx])) });
+        const next = [...itineraryDays];
+        next[dIdx] = JSON.parse(JSON.stringify(defaultItinerary[dIdx]));
+        // Keep the day number the same in case they deleted previous days
+        next[dIdx].day = itineraryDays[dIdx].day;
+        saveState(next);
+        
+        setTimeout(() => setRestoredDayToast(null), 6000);
+      }
+    } else {
+      alert("此天数没有系统预设的默认行程！");
+    }
+  };
+
+  const undoRestoreDay = () => {
+    if (restoredDayToast) {
+      const next = [...itineraryDays];
+      next[restoredDayToast.dIdx] = restoredDayToast.backup;
+      saveState(next);
+      setRestoredDayToast(null);
+    }
+  };
+
   // --- ACTIONS ---
   const updateDay = (dIdx: number, updates: any) => {
     const next = [...itineraryDays];
@@ -390,7 +419,10 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
                         onChange={(e) => updateDay(dIdx, { date: e.target.value })}
                         className="text-xs font-bold text-gray-600 tracking-widest uppercase bg-white border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all flex-1"
                       />
-                      <button onClick={() => deleteDay(dIdx)} className="text-red-500 hover:text-red-700 bg-red-50 p-1.5 rounded-lg border border-red-100 flex-shrink-0">
+                      <button onClick={() => restoreDayToDefault(dIdx)} className="text-orange-500 hover:text-orange-700 bg-orange-50 p-1.5 rounded-lg border border-orange-100 flex-shrink-0" title="恢复此天默认行程">
+                        <RotateCcw className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => deleteDay(dIdx)} className="text-red-500 hover:text-red-700 bg-red-50 p-1.5 rounded-lg border border-red-100 flex-shrink-0" title="删除此天">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                       </button>
                     </div>
@@ -660,23 +692,27 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
       </div>
 
       {isEditing && (
-        <div className="mt-8 space-y-4">
+        <div className="mt-8">
           <button 
             onClick={addDay} 
             className="w-full py-4 bg-white border border-gray-200 shadow-sm rounded-2xl text-[#2D3436] font-black text-lg hover:border-[#2D3436] hover:shadow-md transition-all flex items-center justify-center gap-2"
           >
             <Plus className="w-5 h-5" /> 增加一天 (Add Day)
           </button>
-          
+        </div>
+      )}
+
+      {/* Undo Restore Toast */}
+      {restoredDayToast && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center justify-between gap-4 z-50 animate-in slide-in-from-bottom-8 fade-in duration-300 sm:min-w-[300px]">
+          <span className="text-sm font-medium pr-2">
+            已恢复默认行程
+          </span>
           <button 
-            onClick={() => {
-              if(window.confirm('警告：此操作将清空您所有的手动修改，并恢复为系统最新定夺的默认行程。确定要继续吗？')) {
-                setItineraryDays(JSON.parse(JSON.stringify(defaultItinerary)));
-              }
-            }}
-            className="w-full py-3 bg-red-50 border border-red-100 text-red-500 font-bold rounded-xl hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-2 text-sm"
+            onClick={undoRestoreDay}
+            className="text-[#00cec9] hover:text-white transition-colors text-sm font-bold uppercase tracking-wider bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg whitespace-nowrap"
           >
-            <AlertTriangle className="w-4 h-4" /> 恢复系统默认行程
+            撤销 Undo
           </button>
         </div>
       )}

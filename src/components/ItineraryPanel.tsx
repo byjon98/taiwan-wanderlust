@@ -242,27 +242,45 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
   const [future, setFuture] = useState<any[][]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredDays = React.useMemo(() => {
-    if (!searchQuery.trim()) return itineraryDays;
-    const q = searchQuery.toLowerCase().trim();
-    
-    return itineraryDays.map(day => {
-      // If the day title or "day X" matches, return the whole day
-      if (day.title.toLowerCase().includes(q) || `day ${day.day}`.includes(q)) {
-        return day;
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      let matchedId = '';
+      
+      for (let dIdx = 0; dIdx < itineraryDays.length; dIdx++) {
+        const day = itineraryDays[dIdx];
+        if (day.title.toLowerCase().includes(q) || `day ${day.day}`.includes(q)) {
+          matchedId = `day-${dIdx}`;
+          break;
+        }
+        for (let iIdx = 0; iIdx < day.items.length; iIdx++) {
+          if (day.items[iIdx].name.toLowerCase().includes(q)) {
+            // Need to expand the day or item?
+            matchedId = `item-${dIdx}-${iIdx}`;
+            break;
+          }
+        }
+        if (matchedId) break;
       }
       
-      // Otherwise, filter items within the day
-      const matchedItems = day.items.filter((item: any) => 
-        item.name.toLowerCase().includes(q)
-      );
-      
-      if (matchedItems.length > 0) {
-        return { ...day, items: matchedItems };
+      if (matchedId) {
+        const el = document.getElementById(matchedId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('ring-4', 'ring-indigo-500', 'ring-opacity-50', 'transition-all');
+          setTimeout(() => el.classList.remove('ring-4', 'ring-indigo-500', 'ring-opacity-50'), 2000);
+          
+          if (matchedId.startsWith('item-')) {
+             setExpandedItems(prev => prev[matchedId] ? prev : { [matchedId]: true });
+          }
+        } else {
+          // Element might not be rendered yet if virtualization is used, but here we render everything.
+        }
+      } else {
+        alert('未找到相关行程，请尝试其他关键词');
       }
-      return null;
-    }).filter(Boolean);
-  }, [itineraryDays, searchQuery]);
+    }
+  };
 
   React.useEffect(() => {
     localStorage.setItem('taiwan_trip_itinerary_v7', JSON.stringify(itineraryDays));
@@ -362,7 +380,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
   };
 
   const itineraryByDay = React.useMemo(() => {
-    return filteredDays.map(day => {
+    return itineraryDays.map(day => {
       const groups: { regionId: string | null; regionName: string | null; items: any[]; nearby: any[] }[] = [];
       let currentGroup: { regionId: string | null; regionName: string | null; items: any[]; nearby: any[] } | null = null;
 
@@ -443,9 +461,10 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
             </div>
             <input
               type="text"
-              placeholder="搜索天数 (如 Day 3) 或地点 (如 淡水)..."
+              placeholder="搜索后按回车跳转 (如 Day 3 或 淡水)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleSearch}
               className="block w-full pl-10 pr-10 py-3 bg-gray-50 border-gray-100 focus:bg-white rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-[#2D3436] placeholder-gray-400"
             />
             {searchQuery && (
@@ -469,7 +488,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
             <p className="text-gray-500 font-bold">没有找到匹配的行程</p>
           </div>
         ) : itineraryByDay.map((day, dIdx) => (
-          <div key={dIdx} className="relative">
+          <div key={dIdx} id={`day-${dIdx}`} className="relative rounded-2xl transition-all duration-500">
             <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl py-4 mb-6 flex items-center gap-4 border-b border-gray-100">
               <div className="bg-[#2D3436] text-white w-12 h-12 rounded-2xl flex flex-col items-center justify-center flex-shrink-0 shadow-xl shadow-[#2D3436]/20">
                 <span className="text-[10px] font-black opacity-60 leading-none">DAY</span>
@@ -527,7 +546,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
                     {group.items.map((item, iIdx) => {
                       const actualIdx = item.originalIndex;
                       return (
-                      <div key={iIdx} className="relative flex flex-col sm:flex-row sm:items-center gap-2">
+                      <div key={iIdx} id={`item-${dIdx}-${actualIdx}`} className="relative flex flex-col sm:flex-row sm:items-center gap-2 rounded-2xl transition-all duration-500">
                         <div className="absolute left-[-22px] top-1.5 w-3 h-3 rounded-full bg-white border-2 border-[#2D3436] z-10" />
                         
                         {isEditing ? (

@@ -265,8 +265,14 @@ export default function App() {
   const executeCompare = () => {
     if (compareSelected.length < 2) return;
     const prompt = `你是我的台湾旅行顾问。请帮我深度分析和对比这 ${compareSelected.length} 家店（包含特色、食物、避雷、总体评价等维度），并给出你的最终推荐结论：\n\n` + 
-      compareSelected.map(c => `[${c.n}]: (位于${c.zone || '未知'}) - ${c.f} - 价位${c.price} - 必吃: ${c.eat || '无'} - 评价: ${c.r || '无'}`).join('\n');
-    window.open(`https://chatgpt.com/?q=${encodeURIComponent(prompt)}`, '_blank');
+      compareSelected.map(c => `[${c.n}]: (位于${c.zone || '未知'}) - ${c.f || ''} - 价位${c.price || ''} - 必吃: ${c.eat || '无'} - 评价: ${c.r || '无'}`).join('\n');
+    
+    navigator.clipboard.writeText(prompt).then(() => {
+      const userCopy = window.confirm("已将对比提示词复制到剪贴板！\n\n即将跳转至 Gemini AI，请在输入框直接粘贴即可。");
+      if (userCopy !== null) {
+        window.open('https://gemini.google.com/app', '_blank');
+      }
+    });
   };
 
   const toggleRoute = (loc: any) => {
@@ -511,16 +517,17 @@ export default function App() {
             )}
           >
             我的行程
-            <button 
-              onClick={() => setActiveTab(activeTab === 'expense' ? 'explore' : 'expense')}
-              className={cn(
-                "hidden md:flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm",
-                activeTab === 'expense' ? "bg-[#2D3436] text-white border-[#2D3436]" : "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-              )}
-            >
-              <Wallet className="w-4 h-4" />
-              <span>财务</span>
-            </button>
+          </button>
+          
+          <button 
+            onClick={() => setActiveTab(activeTab === 'expense' ? 'explore' : 'expense')}
+            className={cn(
+              "hidden md:flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm",
+              activeTab === 'expense' ? "bg-[#2D3436] text-white border-[#2D3436]" : "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+            )}
+          >
+            <Wallet className="w-4 h-4" />
+            <span>财务</span>
           </button>
         </div>
       </header>

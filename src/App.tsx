@@ -443,7 +443,7 @@ export default function App() {
   return (
     <div className="h-[100dvh] w-full bg-[#FAFAFA] text-[#2D3436] font-sans flex flex-col overflow-hidden leading-snug">
       {/* Header */}
-      <header className="flex-shrink-0 bg-white border-b border-gray-100 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 py-3 md:h-16 shadow-[0_2px_10px_rgba(0,0,0,0.02)] z-20 w-full relative gap-3">
+      <header className="flex-shrink-0 bg-white border-b border-gray-100 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:h-[calc(4rem+env(safe-area-inset-top))] shadow-[0_2px_10px_rgba(0,0,0,0.02)] z-20 w-full relative gap-3">
         <div className="flex items-center w-full md:w-auto justify-between md:justify-start gap-4">
           <div className="flex items-center gap-3">
             <div 
@@ -1020,7 +1020,7 @@ export default function App() {
         </div>
 
         {/* Bottom Nav for Mobile */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex items-center justify-around h-16 px-4 z-50 pb-safe shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex items-center justify-around h-[calc(4rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] px-4 z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
           <button 
             onClick={() => setViewMode('landing')}
             className="flex flex-col items-center gap-1 flex-1 transition-all text-gray-400 hover:text-[#2D3436]"

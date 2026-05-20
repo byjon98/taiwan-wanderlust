@@ -324,6 +324,7 @@ export default function App() {
       const detectedRegionName = regions.find(r => r.id === detectedRegionId)?.name || '自定义';
       return {
         ...c, 
+        t: c.t || c.cuisine || '新添加',
         region: detectedRegionName, 
         regionId: detectedRegionId, 
         isCustom: true
@@ -332,9 +333,11 @@ export default function App() {
     
     let sourceLocs: any[] = [];
     if (activeRegionId === 'custom') {
-      sourceLocs = mappedCustoms.filter(c => c.regionId === 'custom');
+      // Show ALL custom stores in the "Newly Added" tab
+      sourceLocs = mappedCustoms;
     } else {
-      sourceLocs = [...allLocs, ...mappedCustoms.filter(c => c.regionId !== 'custom')];
+      // Show custom stores at the TOP of the "All" tab or specific region tab
+      sourceLocs = [...mappedCustoms.filter(c => c.regionId !== 'custom'), ...allLocs];
     }
 
     // Include Info Items in search results
@@ -383,7 +386,7 @@ export default function App() {
 
       return true;
     });
-  }, [activeRegion, activeZone, searchQuery, activeFilters, openAtTime]);
+  }, [activeRegionId, activeRegion, activeZone, searchQuery, activeFilters, openAtTime, customStores]);
 
   const toggleCompare = (loc: any) => {
     if (compareSelected.find(c => (c.uid && c.uid === loc.uid) || (!c.uid && c.n === loc.n))) {

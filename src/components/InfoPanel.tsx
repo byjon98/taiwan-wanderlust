@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useFirestoreSync } from '../hooks/useFirestoreSync';
 import { AlertTriangle, Plane, Train, CheckCircle2, Circle, Navigation, Plus, X, ShoppingBag, Gift, Sparkles, Package, Coffee, Brush, Heart, Footprints, User, Store, Utensils, ChevronRight, ExternalLink, MapPin, Clock, Tag, MessageSquare, Info, Eye, RotateCcw, RotateCw, Trash2, Undo2, Redo2, Smartphone, Cpu } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -22,13 +23,23 @@ interface StatefulPackingCategory {
   items: StatefulPackingItem[];
 }
 
+
+const INITIAL_PACKING_LIST = defaultPackingList.map(cat => ({
+  title: cat.title,
+  items: cat.items.map((item, i) => ({
+    ...item,
+    id: `${cat.title}-${i}-${Date.now()}-${Math.random()}`,
+    checked: false
+  }))
+}));
+
 export default function InfoPanel() {
   const [activeTab, setActiveTab] = useState<'logistics' | 'souvenirs' | 'grocery' | 'packing'>('logistics');
   const [expandedModule, setExpandedModule] = useState<string | null>(null);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
 
   // Packing List State
-  const [userPackingList, setUserPackingList] = useState<StatefulPackingCategory[]>([]);
+  const [userPackingList, setUserPackingList] = useFirestoreSync<StatefulPackingCategory[]>('packing', 'taiwan_trip_packing_v1', INITIAL_PACKING_LIST);
   const [history, setHistory] = useState<StatefulPackingCategory[][]>([]);
   const [future, setFuture] = useState<StatefulPackingCategory[][]>([]);
   const [newPackingItems, setNewPackingItems] = useState<Record<number, string>>({});
@@ -58,27 +69,7 @@ export default function InfoPanel() {
     setUserPackingList(next);
   };
 
-  // Initialize Packing List from Storage or Default
-  useEffect(() => {
-    const saved = localStorage.getItem('taiwan_trip_packing_v1');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setUserPackingList(parsed);
-      } catch (e) {
-        resetPackingList();
-      }
-    } else {
-      resetPackingList();
-    }
-  }, []);
 
-  // Save Packing List to Storage
-  useEffect(() => {
-    if (userPackingList.length > 0) {
-      localStorage.setItem('taiwan_trip_packing_v1', JSON.stringify(userPackingList));
-    }
-  }, [userPackingList]);
 
   const resetPackingList = () => {
     const initialized = defaultPackingList.map(cat => ({
@@ -254,22 +245,12 @@ export default function InfoPanel() {
     { id: 5, text: '下载 Google Maps 离线地图', checked: false }
   ];
 
-  const [checklist, setChecklist] = useState<{ id: number; text: string; checked: boolean }[]>(() => {
-    try {
-      const saved = localStorage.getItem('taiwan_trip_checklist_v1');
-      return saved ? JSON.parse(saved) : defaultChecklist;
-    } catch {
-      return defaultChecklist;
-    }
-  });
+  const [checklist, setChecklist] = useFirestoreSync<{ id: number; text: string; checked: boolean }[]>('checklist', 'taiwan_trip_checklist_v1', defaultChecklist);
   const [checklistHistory, setChecklistHistory] = useState<typeof checklist[]>([]);
   const [checklistFuture, setChecklistFuture] = useState<typeof checklist[]>([]);
   const [newItem, setNewItem] = useState('');
 
-  // Persist checklist to localStorage
-  useEffect(() => {
-    localStorage.setItem('taiwan_trip_checklist_v1', JSON.stringify(checklist));
-  }, [checklist]);
+
 
   const updateChecklistWithHistory = (newList: typeof checklist) => {
     setChecklistHistory(prev => [...prev.slice(-49), checklist]);

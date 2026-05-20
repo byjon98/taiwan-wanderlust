@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useFirestoreSync } from '../hooks/useFirestoreSync';
+
 import { 
   MapPin, 
   Calendar, 
@@ -236,14 +238,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
   }, []);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [itineraryDays, setItineraryDays] = useState<any[]>(() => {
-    try {
-      const saved = localStorage.getItem('taiwan_trip_itinerary_v7');
-      return saved ? JSON.parse(saved) : defaultItinerary;
-    } catch {
-      return defaultItinerary;
-    }
-  });
+  const [itineraryDays, setItineraryDays] = useFirestoreSync<any[]>('itinerary', 'taiwan_trip_itinerary_v7', defaultItinerary);
   const [history, setHistory] = useState<any[][]>([]);
   const [future, setFuture] = useState<any[][]>([]);
   const [searchQuery, setSearchQuery] = useState('');

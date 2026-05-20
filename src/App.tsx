@@ -37,9 +37,7 @@ export default function App() {
   });
   const [deletedRouteItem, setDeletedRouteItem] = useState<{ item: any, index: number } | null>(null);
 
-  useEffect(() => {
-    localStorage.setItem('my_app_routeItems', JSON.stringify(routeItems));
-  }, [routeItems]);
+
   
   const [openAtTime, setOpenAtTime] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);

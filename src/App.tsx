@@ -30,6 +30,7 @@ export default function App() {
   const [compareSelected, setCompareSelected] = useState<any[]>([]);
   const [routeItems, setRouteItems] = useFirestoreSync<any[]>('routeItems', 'my_app_routeItems', []);
   const [deletedRouteItem, setDeletedRouteItem] = useState<{ item: any, index: number } | null>(null);
+  const [deletedCustomStore, setDeletedCustomStore] = useState<{ item: any, index: number } | null>(null);
 
   const [customStores, setCustomStores] = useFirestoreSync<any[]>('custom_stores', 'taiwan_trip_custom_stores_v1', []);
   
@@ -731,6 +732,18 @@ export default function App() {
                   <span className="text-[10px] md:text-[11px] font-black uppercase tracking-widest leading-none whitespace-nowrap">{r.name}</span>
                 </button>
               ))}
+              <button 
+                  onClick={() => { setActiveRegionId('custom'); setActiveTab('explore'); setSearchQuery(''); setActiveZone(null); }}
+                  className={cn(
+                    "py-2 px-4 lg:py-3 lg:h-14 flex-shrink-0 rounded-2xl flex flex-col lg:flex-row items-center justify-center lg:justify-start transition-all gap-1 lg:gap-4 min-w-[80px] lg:min-w-0 relative group",
+                    activeRegionId === 'custom' && activeTab === 'explore'
+                      ? "bg-[#2D3436] text-white shadow-xl shadow-[#2D3436]/10 transform lg:translate-x-1"
+                      : "bg-transparent text-gray-500 hover:bg-white hover:text-[#2D3436] hover:shadow-sm"
+                  )}
+                >
+                  <span className="text-xl lg:text-2xl flex-shrink-0 leading-none group-hover:scale-110 transition-transform">🌟</span>
+                  <span className="text-[10px] md:text-[11px] font-black uppercase tracking-widest leading-none whitespace-nowrap">新加店面</span>
+                </button>
             </div>
 
             {/* Operating Hours */}
@@ -1066,10 +1079,11 @@ export default function App() {
                                       </div>
                                       {loc.isCustom && (
                                         <button 
-                                          onClick={() => {
-                                            if (window.confirm(`确定要删除 "${loc.n}" 吗？此操作不可恢复。`)) {
-                                              setCustomStores(prev => prev.filter(c => c.uid !== loc.uid));
-                                            }
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const index = customStores.findIndex(c => c.uid === loc.uid);
+                                            setDeletedCustomStore({ item: loc, index });
+                                            setCustomStores(prev => prev.filter(c => c.uid !== loc.uid));
                                           }}
                                           className="px-2 py-0.5 bg-red-50 text-red-600 border border-red-200 rounded text-[9px] font-bold hover:bg-red-100"
                                         >

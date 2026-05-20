@@ -1109,7 +1109,11 @@ export default function App() {
                                   </div>
                                 )}
                                 
-                                <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-xl relative">
+                                <div 
+                                  className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-xl relative"
+                                  onClick={e => e.stopPropagation()}
+                                  onTouchStart={e => e.stopPropagation()}
+                                >
                                   <div className="flex items-center justify-between mb-2">
                                     <span className="font-bold text-gray-600 text-[11px] flex items-center gap-1">✏️ 我的备注 (可实时同步)</span>
                                     <div className="flex gap-2 items-center">
@@ -1358,38 +1362,44 @@ export default function App() {
 
         {/* Undo Toast for Route Items */}
         {deletedRouteItem && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center justify-between gap-4 z-50 animate-in slide-in-from-bottom-8 fade-in duration-300 sm:min-w-[300px]">
-            <span className="text-sm font-medium pr-2">
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md text-white px-3 py-2 rounded-full shadow-2xl flex items-center justify-between gap-3 z-50 animate-in slide-in-from-bottom-8 fade-in duration-300">
+            <span className="text-xs pr-1">
               已删除 <span className="font-bold">{deletedRouteItem.item.n}</span>
             </span>
-            <button 
-              onClick={undoDeleteRouteItem}
-              className="text-[#00cec9] hover:text-white transition-colors text-sm font-bold uppercase tracking-wider bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg whitespace-nowrap"
-            >
-              撤销 Undo
-            </button>
+            <div className="flex items-center gap-1 border-l border-white/20 pl-3">
+              <button 
+                onClick={undoDeleteRouteItem}
+                className="text-[#00cec9] hover:text-white transition-colors text-xs font-bold uppercase tracking-wider px-2 py-1 rounded"
+              >
+                撤销 Undo
+              </button>
+              <button onClick={() => setDeletedRouteItem(null)} className="text-gray-400 hover:text-white w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors">×</button>
+            </div>
           </div>
         )}
         
         {/* Undo Toast for Custom Stores */}
         {deletedCustomStore && (
-          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-red-600/90 backdrop-blur-md text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center justify-between gap-4 z-50 animate-in slide-in-from-bottom-8 fade-in duration-300 sm:min-w-[300px]">
-            <span className="text-sm font-medium pr-2">
-              删除了店面 <span className="font-bold">{deletedCustomStore.item.n}</span>
+          <div className="fixed bottom-[4.5rem] left-1/2 -translate-x-1/2 bg-red-600/95 backdrop-blur-md text-white px-3 py-2 rounded-full shadow-2xl flex items-center justify-between gap-3 z-50 animate-in slide-in-from-bottom-8 fade-in duration-300">
+            <span className="text-xs pr-1">
+              彻底删除 <span className="font-bold">{deletedCustomStore.item.n}</span>
             </span>
-            <button 
-              onClick={() => {
-                setCustomStores(prev => {
-                  const newArr = [...prev];
-                  newArr.splice(deletedCustomStore.index, 0, deletedCustomStore.item);
-                  return newArr;
-                });
-                setDeletedCustomStore(null);
-              }}
-              className="text-white hover:text-red-100 transition-colors text-sm font-bold uppercase tracking-wider bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg whitespace-nowrap"
-            >
-              撤销 Undo
-            </button>
+            <div className="flex items-center gap-1 border-l border-white/20 pl-3">
+              <button 
+                onClick={() => {
+                  setCustomStores(prev => {
+                    const newArr = [...prev];
+                    newArr.splice(deletedCustomStore.index, 0, deletedCustomStore.item);
+                    return newArr;
+                  });
+                  setDeletedCustomStore(null);
+                }}
+                className="text-white hover:text-red-100 transition-colors text-xs font-bold uppercase tracking-wider px-2 py-1 rounded"
+              >
+                撤销 Undo
+              </button>
+              <button onClick={() => setDeletedCustomStore(null)} className="text-white/70 hover:text-white w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">×</button>
+            </div>
           </div>
         )}
       </main>

@@ -18,14 +18,27 @@ export function useFirestoreSync<T>(docId: string, localStorageKey: string, defa
 
     const unsubscribe = onSnapshot(docRef, (snapshot) => {
       if (snapshot.exists()) {
-        const cloudData = snapshot.data().data as T;
+        const rawData = snapshot.data().data;
+        // Handle both stringified JSON (new format) and raw objects (old format)
+        let cloudData: T;
+        if (typeof rawData === 'string') {
+          try {
+            cloudData = JSON.parse(rawData);
+          } catch {
+            cloudData = rawData as any;
+          }
+        } else {
+          cloudData = rawData as T;
+        }
+        
         setState(cloudData);
         localStorage.setItem(localStorageKey, JSON.stringify(cloudData));
       } else {
         // Migration: If cloud is empty, seed it with our local data
         const local = localStorage.getItem(localStorageKey);
         const dataToSeed = local ? JSON.parse(local) : defaultValue;
-        setDoc(docRef, { data: dataToSeed, updatedAt: Date.now() }, { merge: true });
+        // Stringify to avoid Firestore nested array limitations
+        setDoc(docRef, { data: JSON.stringify(dataToSeed), updatedAt: Date.now() }, { merge: true });
       }
     }, (error) => {
       console.error(`Firestore sync error for ${docId}:`, error);
@@ -42,9 +55,9 @@ export function useFirestoreSync<T>(docId: string, localStorageKey: string, defa
       // 1. Update local storage instantly
       localStorage.setItem(localStorageKey, JSON.stringify(updated));
       
-      // 2. Push to Firestore
+      // 2. Push to Firestore (Stringify to prevent nested array crash)
       const docRef = doc(db, 'trip', docId);
-      setDoc(docRef, { data: updated, updatedAt: Date.now() }, { merge: true })
+      setDoc(docRef, { data: JSON.stringify(updated), updatedAt: Date.now() }, { merge: true })
         .catch(err => console.error(`Failed to push ${docId} to Firestore:`, err));
         
       return updated;

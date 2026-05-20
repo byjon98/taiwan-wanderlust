@@ -53,7 +53,8 @@ export default function App() {
   "price": "消费预估",
   "minSpend": "低消限制",
   "zone": "所属区域（例如台北信义区、台西、或者是你认为最合适的区域名）",
-  "cuisine": "菜系/类型"
+  "cuisine": "菜系/类型",
+  "hours": "营业时间（如 10:00 - 22:00）"
 }`;
     navigator.clipboard.writeText(prompt).then(() => {
       alert('Prompt 已复制！将自动打开 Gemini，请粘贴并让其生成 JSON，复制生成的 JSON 后回到 App 继续。');
@@ -218,7 +219,12 @@ export default function App() {
     if (activeRegionId === 'all') {
       const zones = new Set<string>();
       regions.forEach(r => r.locs.forEach(l => { if (l.zone) zones.add(l.zone); }));
+      (customStores || []).forEach(l => { if (l.zone) zones.add(l.zone); });
       return Array.from(zones);
+    }
+    if (activeRegionId === 'custom') {
+      const zones = new Set((customStores || []).map(l => l.zone).filter(Boolean));
+      return Array.from(zones) as string[];
     }
     if (!activeRegion) return [];
     const zones = new Set(activeRegion.locs.map(l => l.zone).filter(Boolean));
@@ -290,12 +296,22 @@ export default function App() {
   };
 
   const filteredLocs = useMemo(() => {
-    let allLocs = (activeRegionId === 'all' || searchQuery)
-      ? regions.flatMap(r => r.locs.map((l, i) => ({ ...l, region: r.name, regionId: r.id, uid: `${r.id}-${i}-${l.n}` })))
-      : activeRegion ? activeRegion.locs.map((l, i) => ({ ...l, region: activeRegion.name, regionId: activeRegion.id, uid: `${activeRegion.id}-${i}-${l.n}` })) : [];
+    let allLocs: any[] = [];
+    if (activeRegionId === 'all' || searchQuery) {
+      allLocs = regions.flatMap(r => r.locs.map((l, i) => ({ ...l, region: r.name, regionId: r.id, uid: `${r.id}-${i}-${l.n}` })));
+    } else if (activeRegion) {
+      allLocs = activeRegion.locs.map((l, i) => ({ ...l, region: activeRegion.name, regionId: activeRegion.id, uid: `${activeRegion.id}-${i}-${l.n}` }));
+    }
     
-    const mappedCustoms = (customStores || []).map(c => ({...c, region: '自定义', regionId: 'custom', isCustom: true}));
-    let sourceLocs = [...allLocs, ...mappedCustoms];
+    // Reverse custom stores to put newest first
+    const mappedCustoms = [...(customStores || [])].reverse().map(c => ({...c, region: '自定义', regionId: 'custom', isCustom: true}));
+    
+    let sourceLocs: any[] = [];
+    if (activeRegionId === 'custom') {
+      sourceLocs = mappedCustoms;
+    } else {
+      sourceLocs = [...allLocs, ...mappedCustoms];
+    }
 
     // Include Info Items in search results
     if (searchQuery) {

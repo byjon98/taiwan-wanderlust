@@ -32,6 +32,24 @@ export default function App() {
   const [deletedRouteItem, setDeletedRouteItem] = useState<{ item: any, index: number } | null>(null);
   const [deletedCustomStore, setDeletedCustomStore] = useState<{ item: any, index: number } | null>(null);
 
+  // Auto-close undo toasts
+  useEffect(() => {
+    let timer1: NodeJS.Timeout;
+    if (deletedRouteItem) {
+      timer1 = setTimeout(() => setDeletedRouteItem(null), 5000);
+    }
+    return () => clearTimeout(timer1);
+  }, [deletedRouteItem]);
+
+  useEffect(() => {
+    let timer2: NodeJS.Timeout;
+    if (deletedCustomStore) {
+      timer2 = setTimeout(() => setDeletedCustomStore(null), 5000);
+    }
+    return () => clearTimeout(timer2);
+  }, [deletedCustomStore]);
+
+
   const [customStores, setCustomStores] = useFirestoreSync<any[]>('custom_stores', 'taiwan_trip_custom_stores_v1', []);
   
   const getRegionIdForZone = (zone: string) => {
@@ -318,7 +336,7 @@ export default function App() {
     }
     
     // Reverse custom stores to put newest first
-    // Reverse custom stores to put newest first
+    // Reverse custom stores to put newest first ONLY for 'custom' view
     const mappedCustoms = [...(customStores || [])].reverse().map(c => {
       const detectedRegionId = getRegionIdForZone(c.zone);
       const detectedRegionName = regions.find(r => r.id === detectedRegionId)?.name || '自定义';
@@ -333,11 +351,14 @@ export default function App() {
     
     let sourceLocs: any[] = [];
     if (activeRegionId === 'custom') {
-      // Show ALL custom stores in the "Newly Added" tab
+      // Show ALL custom stores in the "Newly Added" tab, sorted by newest
       sourceLocs = mappedCustoms;
+    } else if (activeRegionId === 'all' || searchQuery) {
+      // Show custom stores at the bottom of the "All" tab in original order
+      sourceLocs = [...allLocs, ...mappedCustoms.slice().reverse()];
     } else {
-      // Show custom stores at the TOP of the "All" tab or specific region tab
-      sourceLocs = [...mappedCustoms.filter(c => c.regionId !== 'custom'), ...allLocs];
+      // Show custom stores at the bottom of their specific region tab in original order
+      sourceLocs = [...allLocs, ...mappedCustoms.slice().reverse().filter(c => c.regionId === activeRegionId)];
     }
 
     // Include Info Items in search results
@@ -971,7 +992,23 @@ export default function App() {
                   ) : (
                     <div className="flex flex-col items-center justify-center p-8 mt-4 text-center">
                       <h3 className="text-lg font-bold text-gray-800 mb-2">没有符合筛选条件的结果</h3>
-                      <p className="text-sm text-gray-500">请尝试调整选项或重置过滤条件。</p>
+                      <p className="text-sm text-gray-500 mb-6">请尝试调整选项或重置过滤条件。</p>
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                        <button 
+                          onClick={handleAddStoreAI}
+                          className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:scale-105 transition-transform"
+                        >
+                          <span className="text-xl">✨</span>
+                          问问 AI 推荐
+                        </button>
+                        <button 
+                          onClick={() => setShowAddStoreModal(true)}
+                          className="flex items-center gap-2 bg-[#2D3436] text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:scale-105 transition-transform"
+                        >
+                          <span className="text-xl">➕</span>
+                          自己新增店面
+                        </button>
+                      </div>
                     </div>
                   )
                 ) : (

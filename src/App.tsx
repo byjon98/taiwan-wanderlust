@@ -290,9 +290,12 @@ export default function App() {
   };
 
   const filteredLocs = useMemo(() => {
-    let sourceLocs = (activeRegionId === 'all' || searchQuery)
-      
-      
+    let allLocs = (activeRegionId === 'all' || searchQuery)
+      ? regions.flatMap(r => r.locs.map((l, i) => ({ ...l, region: r.name, regionId: r.id, uid: `${r.id}-${i}-${l.n}` })))
+      : activeRegion ? activeRegion.locs.map((l, i) => ({ ...l, region: activeRegion.name, regionId: activeRegion.id, uid: `${activeRegion.id}-${i}-${l.n}` })) : [];
+    
+    const mappedCustoms = (customStores || []).map(c => ({...c, region: '自定义', regionId: 'custom', isCustom: true}));
+    let sourceLocs = [...allLocs, ...mappedCustoms];
 
     // Include Info Items in search results
     if (searchQuery) {

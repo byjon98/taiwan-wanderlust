@@ -251,11 +251,11 @@ export default function App() {
     if (activeRegionId === 'all') {
       const zones = new Set<string>();
       regions.forEach(r => r.locs.forEach(l => { if (l.zone) zones.add(l.zone); }));
-      (customStores || []).forEach(l => { if (l.zone) zones.add(l.zone); });
+      (Array.isArray(customStores) ? customStores : []).forEach(l => { if (l.zone) zones.add(l.zone); });
       return Array.from(zones);
     }
     if (activeRegionId === 'custom') {
-      const zones = new Set((customStores || []).map(l => l.zone).filter(Boolean));
+      const zones = new Set((Array.isArray(customStores) ? customStores : []).map(l => l.zone).filter(Boolean));
       return Array.from(zones) as string[];
     }
     if (!activeRegion) return [];
@@ -337,7 +337,7 @@ export default function App() {
     
     // Reverse custom stores to put newest first
     // Reverse custom stores to put newest first ONLY for 'custom' view
-    const mappedCustoms = [...(customStores || [])].reverse().map(c => {
+    const mappedCustoms = [...(Array.isArray(customStores) ? customStores : [])].reverse().map(c => {
       const detectedRegionId = getRegionIdForZone(c.zone);
       const detectedRegionName = regions.find(r => r.id === detectedRegionId)?.name || '自定义';
       return {

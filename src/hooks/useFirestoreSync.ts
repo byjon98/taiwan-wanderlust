@@ -7,7 +7,15 @@ export function useFirestoreSync<T>(docId: string, localStorageKey: string, defa
   const [state, setState] = useState<T>(() => {
     try {
       const local = localStorage.getItem(localStorageKey);
-      return local ? JSON.parse(local) : defaultValue;
+      if (local) {
+        let parsed = JSON.parse(local);
+        // Handle double-stringified corruption gracefully
+        if (typeof parsed === 'string') {
+            try { parsed = JSON.parse(parsed); } catch {}
+        }
+        return parsed;
+      }
+      return defaultValue;
     } catch {
       return defaultValue;
     }
@@ -23,7 +31,12 @@ export function useFirestoreSync<T>(docId: string, localStorageKey: string, defa
         let cloudData: T;
         if (typeof rawData === 'string') {
           try {
-            cloudData = JSON.parse(rawData);
+            let parsed = JSON.parse(rawData);
+            // Protect against double-stringify corruption
+            if (typeof parsed === 'string') {
+              try { parsed = JSON.parse(parsed); } catch {}
+            }
+            cloudData = parsed;
           } catch {
             cloudData = rawData as any;
           }
@@ -36,7 +49,15 @@ export function useFirestoreSync<T>(docId: string, localStorageKey: string, defa
       } else {
         // Migration: If cloud is empty, seed it with our local data
         const local = localStorage.getItem(localStorageKey);
-        const dataToSeed = local ? JSON.parse(local) : defaultValue;
+        let dataToSeed = defaultValue;
+        if (local) {
+          try {
+            let parsed = JSON.parse(local);
+            if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+            dataToSeed = parsed;
+          } catch {}
+        }
+        
         // Stringify to avoid Firestore nested array limitations
         setDoc(docRef, { data: JSON.stringify(dataToSeed), updatedAt: Date.now() }, { merge: true });
       }

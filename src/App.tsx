@@ -1319,7 +1319,7 @@ export default function App() {
           </button>
         )}
 
-        {/* Undo Toast */}
+        {/* Undo Toast for Route Items */}
         {deletedRouteItem && (
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center justify-between gap-4 z-50 animate-in slide-in-from-bottom-8 fade-in duration-300 sm:min-w-[300px]">
             <span className="text-sm font-medium pr-2">
@@ -1328,6 +1328,28 @@ export default function App() {
             <button 
               onClick={undoDeleteRouteItem}
               className="text-[#00cec9] hover:text-white transition-colors text-sm font-bold uppercase tracking-wider bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg whitespace-nowrap"
+            >
+              撤销 Undo
+            </button>
+          </div>
+        )}
+        
+        {/* Undo Toast for Custom Stores */}
+        {deletedCustomStore && (
+          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-red-600/90 backdrop-blur-md text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center justify-between gap-4 z-50 animate-in slide-in-from-bottom-8 fade-in duration-300 sm:min-w-[300px]">
+            <span className="text-sm font-medium pr-2">
+              删除了店面 <span className="font-bold">{deletedCustomStore.item.n}</span>
+            </span>
+            <button 
+              onClick={() => {
+                setCustomStores(prev => {
+                  const newArr = [...prev];
+                  newArr.splice(deletedCustomStore.index, 0, deletedCustomStore.item);
+                  return newArr;
+                });
+                setDeletedCustomStore(null);
+              }}
+              className="text-white hover:text-red-100 transition-colors text-sm font-bold uppercase tracking-wider bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg whitespace-nowrap"
             >
               撤销 Undo
             </button>

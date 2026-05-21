@@ -687,7 +687,16 @@ export default function App() {
   return (
     <div className="h-[100dvh] w-full bg-[#FAFAFA] text-[#2D3436] font-sans flex flex-col overflow-hidden leading-snug">
       {/* Header */}
-      <header className="flex-shrink-0 bg-white/70 backdrop-blur-xl border-b border-white/20 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:h-[calc(4rem+env(safe-area-inset-top))] shadow-[0_2px_10px_rgba(0,0,0,0.02)] z-50 w-full relative gap-3">
+      <header 
+        onClick={(e) => {
+          // If the user clicks on the header itself (not its children like buttons/inputs)
+          if (e.target === e.currentTarget) {
+            const main = document.getElementById('scroll-container-main');
+            if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        }}
+        className="flex-shrink-0 bg-white border-b border-gray-100 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:h-[calc(4rem+env(safe-area-inset-top))] shadow-[0_2px_10px_rgba(0,0,0,0.02)] z-50 w-full relative gap-3 cursor-pointer md:cursor-default"
+      >
         <div className="flex items-center w-full md:w-auto justify-between md:justify-start gap-4">
           <div className="flex items-center gap-3">
             <div 
@@ -811,20 +820,7 @@ export default function App() {
 
       
 
-      <main id="scroll-container-main" onScroll={handleScroll} className={cn(
-        "flex-1 flex flex-col gap-4 z-40 overflow-y-auto no-scrollbar pointer-events-auto",
-        "transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
-        // Mobile Bottom Sheet
-        "fixed bottom-0 left-0 right-0 h-[85dvh] bg-white/85 backdrop-blur-3xl rounded-t-[2rem] p-4 pb-24 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]",
-        showMap ? "translate-y-[calc(100%-80px)]" : "translate-y-0",
-        // Desktop Floating Sidebar (Apple Style)
-        "md:top-[calc(4rem+env(safe-area-inset-top)+24px)] md:bottom-6 md:left-6 md:right-auto md:w-[420px] md:h-auto md:translate-y-0 md:rounded-3xl md:border md:border-white/40 md:p-6"
-      )}>
-        {/* Bottom Sheet Drag Handle */}
-        <div 
-          className="md:hidden w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-4 cursor-pointer shrink-0" 
-          onClick={() => setShowMap(!showMap)} 
-        />
+      <main id="scroll-container-main" onScroll={handleScroll} className="flex-1 flex flex-col lg:flex-row gap-4 p-2 md:p-4 lg:p-6 overflow-y-auto no-scrollbar w-full max-w-[1400px] mx-auto pb-20 md:pb-6">
         {/* LEFT SIDEBAR (Regions + Op Hours + Filters + Route) */}
         {activeTab === 'explore' && (
           <aside className="flex flex-col gap-3 flex-shrink-0 pb-4 lg:pb-10 w-full lg:w-[240px] mt-2 md:mt-0">

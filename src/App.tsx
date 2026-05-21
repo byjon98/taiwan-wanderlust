@@ -888,30 +888,26 @@ export default function App() {
             </div>
 
             {/* Operating Hours */}
-            <div className="pt-2 flex flex-col gap-3">
-              <h4 className="font-bold tracking-widest text-xs opacity-80 text-gray-500 flex items-center justify-between px-1">
-                <span className="flex flex-col">
-                  <span className="text-[#2D3436]">营业时间查询</span>
-                  <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-gray-400 mt-0.5">Operating Hours</span>
-                </span>
-                {openAtTime && <button onClick={() => setOpenAtTime('')} className="bg-gray-100 px-2 py-0.5 rounded text-[10px] hover:bg-gray-200">清除</button>}
-              </h4>
-              <div className="flex gap-2">
+            <div className="pt-2 flex flex-col gap-1.5">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[11px] font-bold text-[#2D3436] flex items-center gap-1.5"><ClockIcon className="w-3.5 h-3.5" /> 营业时间</span>
+                {openAtTime && <button onClick={() => setOpenAtTime('')} className="bg-gray-100 px-2 py-0.5 rounded text-[9px] font-bold text-gray-500 hover:bg-gray-200 transition-colors">清除</button>}
+              </div>
+              <div className="flex gap-1.5">
                 <input 
                   type="time" 
                   value={openAtTime}
                   onChange={e => setOpenAtTime(e.target.value)}
-                  className="bg-white text-gray-700 font-bold tracking-widest rounded-xl px-3 py-2 border-transparent shadow-sm focus:border-[#2D3436] focus:ring-1 focus:ring-[#2D3436] text-sm flex-1 outline-none transition-all"
+                  className="bg-white text-gray-700 font-bold tracking-widest rounded-lg px-2.5 py-1.5 border border-gray-200 shadow-sm focus:border-black focus:ring-1 focus:ring-black text-[11px] flex-1 outline-none transition-all"
                 />
                 <button 
                   onClick={() => {
                     const d = new Date();
                     setOpenAtTime(`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`);
                   }}
-                  className="bg-white text-gray-500 hover:text-gray-800 shadow-sm font-bold rounded-xl px-3 py-2 text-xs transition-colors flex flex-col items-center justify-center whitespace-nowrap min-w-[70px]"
+                  className="bg-[#2D3436] text-white hover:bg-black shadow-sm font-bold rounded-lg px-3 py-1.5 text-[10px] transition-colors whitespace-nowrap flex-shrink-0"
                 >
-                  <span>当前时间</span>
-                  <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-0.5 scale-90">Now</span>
+                  当前时间
                 </button>
               </div>
             </div>

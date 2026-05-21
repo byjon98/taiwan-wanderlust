@@ -85,10 +85,10 @@ export const CONSTANTS = {
 
 // Based on desktop files injected initially
 export const INITIAL_SUNK_COSTS: Expense[] = [
-  { id: 'sunk_1', subject: '中华航空双人来回', amount: 2189.64, currency: 'MYR', paymentMethod: 'card', category: 'tickets', paidByJon: 1094.82, paidByJune: 1094.82, forJon: 1094.82, forJune: 1094.82, zone: 'malaysia', timestamp: 1, day: 1 },
-  { id: 'sunk_2', subject: 'Hotel East 台中 (2晚)', amount: 551.28, currency: 'MYR', paymentMethod: 'card', category: 'hotel_cash', paidByJon: 275.64, paidByJune: 275.64, forJon: 275.64, forJune: 275.64, zone: 'taichung', timestamp: 2, day: 1 },
-  { id: 'sunk_3', subject: '城市商旅北门馆 (5晚)', amount: 1308.47, currency: 'MYR', paymentMethod: 'card', category: 'hotel_cash', paidByJon: 654.235, paidByJune: 654.235, forJon: 654.235, forJune: 654.235, zone: 'taipei', timestamp: 3, day: 1 },
-  { id: 'sunk_4', subject: '城市商旅航空馆 (1晚)', amount: 312.59, currency: 'MYR', paymentMethod: 'card', category: 'hotel_cash', paidByJon: 156.295, paidByJune: 156.295, forJon: 156.295, forJune: 156.295, zone: 'taoyuan', timestamp: 4, day: 1 },
-  { id: 'sunk_5', subject: 'Klook 九族票+游船', amount: 263.58, currency: 'MYR', paymentMethod: 'card', category: 'tickets', paidByJon: 131.79, paidByJune: 131.79, forJon: 131.79, forJune: 131.79, zone: 'nantou', timestamp: 5, day: 1 },
-  { id: 'sunk_6', subject: 'eSIM (Jon私账)', amount: 90.00, currency: 'MYR', paymentMethod: 'card', category: 'tickets', paidByJon: 90.0, paidByJune: 0, forJon: 90.0, forJune: 0, zone: 'malaysia', timestamp: 6, day: 1 }
+  { id: 'sunk_1', subject: '中华航空双人来回', amount: 2189.64, currency: 'MYR', paymentMethod: 'card', category: 'tickets', paidByJon: 1094.82, paidByJune: 1094.82, forJon: 1094.82, forJune: 1094.82, zone: 'malaysia', timestamp: 1, day: 0 },
+  { id: 'sunk_2', subject: 'Hotel East 台中 (2晚)', amount: 551.28, currency: 'MYR', paymentMethod: 'card', category: 'hotel_cash', paidByJon: 275.64, paidByJune: 275.64, forJon: 275.64, forJune: 275.64, zone: 'taichung', timestamp: 2, day: 0 },
+  { id: 'sunk_3', subject: '城市商旅北门馆 (5晚)', amount: 1308.47, currency: 'MYR', paymentMethod: 'card', category: 'hotel_cash', paidByJon: 654.235, paidByJune: 654.235, forJon: 654.235, forJune: 654.235, zone: 'taipei', timestamp: 3, day: 0 },
+  { id: 'sunk_4', subject: '城市商旅航空馆 (1晚)', amount: 312.59, currency: 'MYR', paymentMethod: 'card', category: 'hotel_cash', paidByJon: 156.295, paidByJune: 156.295, forJon: 156.295, forJune: 156.295, zone: 'taoyuan', timestamp: 4, day: 0 },
+  { id: 'sunk_5', subject: 'Klook 九族票+游船', amount: 263.58, currency: 'MYR', paymentMethod: 'card', category: 'tickets', paidByJon: 131.79, paidByJune: 131.79, forJon: 131.79, forJune: 131.79, zone: 'nantou', timestamp: 5, day: 0 },
+  { id: 'sunk_6', subject: 'eSIM (Jon私账)', amount: 90.00, currency: 'MYR', paymentMethod: 'card', category: 'tickets', paidByJon: 90.0, paidByJune: 0, forJon: 90.0, forJune: 0, zone: 'malaysia', timestamp: 6, day: 0 }
 ];

@@ -22,6 +22,7 @@ export default function ExpensePanel() {
   // Quick Entry / Top Up State
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [isTopUpOpen, setIsTopUpOpen] = useState(false);
+  const [touchStartY, setTouchStartY] = useState(0);
 
   // Quick Entry Fields
   const [entrySubject, setEntrySubject] = useState('');
@@ -743,10 +744,22 @@ export default function ExpensePanel() {
         <div className="fixed inset-0 z-[100] flex flex-col justify-end">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsFabOpen(false)}></div>
           
-          <div className="bg-white w-full rounded-t-[2rem] shadow-2xl relative z-10 animate-in slide-in-from-bottom duration-300 max-h-[90vh] flex flex-col">
-            <div className="shrink-0 bg-white/90 backdrop-blur pb-2 pt-5 px-6 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="font-black text-lg text-gray-800">记壹笔</h3>
-              <button onClick={() => setIsFabOpen(false)} className="p-2 bg-gray-50 rounded-full text-gray-500 hover:text-gray-800"><X className="w-4 h-4"/></button>
+          <div 
+            className="bg-white w-full rounded-t-[2rem] shadow-2xl relative z-10 animate-in slide-in-from-bottom duration-300 max-h-[90vh] flex flex-col"
+            onTouchStart={(e) => setTouchStartY(e.touches[0].clientY)}
+            onTouchEnd={(e) => {
+              const touchEndY = e.changedTouches[0].clientY;
+              if (touchEndY - touchStartY > 60) {
+                setIsFabOpen(false);
+              }
+            }}
+          >
+            <div className="shrink-0 bg-white/90 backdrop-blur pb-2 pt-3 px-6 border-b border-gray-100 flex flex-col items-center justify-between">
+              <div className="w-12 h-1.5 bg-gray-200 rounded-full mb-3"></div>
+              <div className="w-full flex items-center justify-between">
+                <h3 className="font-black text-lg text-gray-800">记壹笔</h3>
+                <button onClick={() => setIsFabOpen(false)} className="p-2 bg-gray-50 rounded-full text-gray-500 hover:text-gray-800"><X className="w-4 h-4"/></button>
+              </div>
             </div>
             
             <div className="p-6 space-y-8 overflow-y-auto no-scrollbar pb-10">

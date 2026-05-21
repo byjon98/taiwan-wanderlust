@@ -1669,7 +1669,14 @@ export default function App() {
 
       {/* Add Custom Store Modal */}
       {showAddStoreModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div 
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowAddStoreModal(false);
+            }
+          }}
+        >
           <div className="bg-white rounded-3xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
             <h3 className="text-xl font-black text-[#2D3436] mb-4">✨ 新增店面 / 地点</h3>
             

@@ -26,6 +26,7 @@ export default function App() {
   const [activeRegionId, setActiveRegionId] = useState('all');
   const [activeZone, setActiveZone] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showMap, setShowMap] = useState(false);
   
   const [compareSelected, setCompareSelected] = useState<any[]>([]);
   const [routeItems, setRouteItems] = useFirestoreSync<any[]>('routeItems', 'my_app_routeItems', []);
@@ -76,7 +77,7 @@ export default function App() {
     const prompt = `作为专业的台湾旅游达人，请先通过网络搜索了解一下这家店(或相关推荐)："${storeTarget}"。
 了解清楚它的特色、评价和营业时间后，请严格按照以下 JSON 格式输出结果，不要输出任何其他多余的文字或 markdown 标记（例如不要输出 \`\`\`json）：
 {
-  "n": "${newStoreName || '店名'}",
+  "n": "\${newStoreName || '店名'}",
   "f": "店面特色、背景与必买简述",
   "do": "必做体验（一句话）",
   "eat": "必吃/必买推荐（逗号分隔）",
@@ -87,7 +88,9 @@ export default function App() {
   "minSpend": "低消限制",
   "zone": "所属区域（例如台北信义区、台西、或者是你认为最合适的区域名）",
   "cuisine": "菜系/类型",
-  "hours": "营业时间（如 10:00 - 22:00）"
+  "hours": "营业时间（如 10:00 - 22:00）",
+  "lat": "该店的精准纬度(数字)",
+  "lng": "该店的精准经度(数字)"
 }`;
     navigator.clipboard.writeText(prompt).then(() => {
       alert('Prompt 已复制！\\n\\n请手动前往 Gemini (或其他 AI) 粘贴对话，获取 JSON 后回来进入第二步粘贴。');
@@ -941,7 +944,15 @@ export default function App() {
                   {!searchQuery && (
                     <div className="flex items-center gap-3">
                       <span className="hidden sm:block text-[9px] font-black uppercase tracking-[0.2em] text-gray-300">Curated Destinations</span>
-                      <button onClick={() => setShowAddStoreModal(true)} className="bg-[#2D3436] text-white px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 hover:bg-black transition-colors"><Plus className="w-3 h-3" /> 新增店面</button>
+                      {/* Map Toggle Button */}
+                      <button 
+                        onClick={() => setShowMap(!showMap)} 
+                        className={`px-3 py-1 rounded-xl text-[10px] font-bold flex items-center gap-1 transition-colors ${showMap ? 'bg-indigo-50 text-indigo-600 border border-indigo-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'}`}
+                      >
+                        <Map className="w-3 h-3" /> {showMap ? '返回列表' : '地图模式'}
+                      </button>
+
+                      <button onClick={() => setShowAddStoreModal(true)} className="bg-[#2D3436] text-white px-2 py-1 rounded-xl text-[10px] font-bold flex items-center gap-1 hover:bg-black transition-colors"><Plus className="w-3 h-3" /> 新增店面</button>
                     </div>
                   )}
                 </div>
@@ -1027,6 +1038,21 @@ export default function App() {
                       </div>
                     </div>
                   )
+                                ) : showMap ? (
+                  <MapComponent 
+                    locs={filteredLocs} 
+                    onLocClick={(uid) => { 
+                      setShowMap(false);
+                      setExpandedCardId(uid);
+                      setTimeout(() => {
+                        const el = document.getElementById(`loc-card-${uid}`);
+                        if (el) {
+                          const y = el.getBoundingClientRect().top + window.scrollY - 100;
+                          window.scrollTo({top: y, behavior: 'smooth'});
+                        }
+                      }, 100);
+                    }} 
+                  />
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
                     {filteredLocs.map((loc, idx) => {
@@ -1041,6 +1067,7 @@ export default function App() {
                     return (
                       <div 
                         key={loc.uid} 
+                        id={`loc-card-${loc.uid}`} 
                         className={cn("loc-card bg-white p-3 rounded-2xl border flex flex-col justify-between transition-all duration-300", isExpanded ? "col-span-full shadow-md border-gray-200" : "border-gray-100 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-200")} 
                         onClick={(e) => {
                           if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('a')) return;

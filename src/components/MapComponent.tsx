@@ -55,7 +55,26 @@ export function MapComponent({ locs, onLocClick, focusedLocId, routeMode = false
   const validLocs = locs.filter(l => l.lat && l.lng);
   
   const markerRefs = React.useRef<{ [key: string]: L.Marker | null }>({});
+  const [routePath, setRoutePath] = React.useState<[number, number][] | null>(null);
   
+  useEffect(() => {
+    if (routeMode && validLocs.length > 1) {
+      const coords = validLocs.map(l => `${l.lng},${l.lat}`).join(';');
+      const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          if (data.routes && data.routes[0]) {
+            const path = data.routes[0].geometry.coordinates.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
+            setRoutePath(path);
+          }
+        })
+        .catch(err => console.error('OSRM Fetch Error:', err));
+    } else {
+      setRoutePath(null);
+    }
+  }, [routeMode, validLocs.map(l => l.uid).join(',')]); // re-run only when route ordering changes
+
   const defaultCenter: [number, number] = [23.6978, 120.9605];
   
   if (validLocs.length === 0) {
@@ -77,9 +96,9 @@ export function MapComponent({ locs, onLocClick, focusedLocId, routeMode = false
         <MapBounds locs={validLocs} />
         <MapFocus focusedLocId={focusedLocId} locs={validLocs} markerRefs={markerRefs} />
         
-        {routeMode && validLocs.length > 1 && (
+        {routeMode && routePath && (
           <Polyline 
-            positions={validLocs.map(l => [l.lat, l.lng] as [number, number])} 
+            positions={routePath} 
             pathOptions={{ color: '#0984e3', weight: 4, dashArray: '10, 10' }} 
           />
         )}

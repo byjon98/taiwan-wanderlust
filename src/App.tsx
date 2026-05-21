@@ -482,14 +482,18 @@ export default function App() {
     }
   };
   const generateGoogleMapsUrl = (items: any[]) => {
-    const valid = items.filter(i => i.lat && i.lng);
-    if (valid.length === 0) return '';
-    if (valid.length === 1) {
-      return `https://www.google.com/maps/search/?api=1&query=${valid[0].lat},${valid[0].lng}`;
+    if (items.length === 0) return '';
+    const encode = (item: any) => {
+      // Use name + zone as search string for readability in Google Maps
+      const q = `${item.n}${item.zone ? ' ' + item.zone : ''} 台灣`;
+      return encodeURIComponent(q);
+    };
+    if (items.length === 1) {
+      return `https://www.google.com/maps/search/?api=1&query=${encode(items[0])}`;
     }
-    const origin = `${valid[0].lat},${valid[0].lng}`;
-    const dest = `${valid[valid.length - 1].lat},${valid[valid.length - 1].lng}`;
-    const waypoints = valid.slice(1, -1).map(i => `${i.lat},${i.lng}`).join('|');
+    const origin = encode(items[0]);
+    const dest = encode(items[items.length - 1]);
+    const waypoints = items.slice(1, -1).map(encode).join('|');
     let url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}`;
     if (waypoints) url += `&waypoints=${waypoints}`;
     return url;
@@ -914,16 +918,40 @@ export default function App() {
                 </h4>
                 <div className="flex-1 overflow-y-auto no-scrollbar space-y-2 pb-4">
                   {routeItems.map((r, i) => (
-                    <div key={r.uid || `${r.n}-${i}`} className="bg-gray-50 p-2.5 rounded-xl border border-gray-200 flex items-center justify-between">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500 flex-shrink-0 shadow-sm border border-gray-200">
+                    <div key={r.uid || `${r.n}-${i}`} className="bg-gray-50 p-2 rounded-xl border border-gray-200 flex items-center justify-between gap-1">
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                        <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-[9px] font-bold text-gray-500 flex-shrink-0 shadow-sm border border-gray-200">
                           {i + 1}
                         </div>
-                        <span className="text-[11px] font-bold truncate text-gray-700">{r.n}</span>
+                        <span className="text-[10px] font-bold truncate text-gray-700">{r.n}</span>
                       </div>
-                      <button onClick={() => toggleRoute(r)} className="text-gray-400 hover:text-red-500 ml-2">
-                        ✖
-                      </button>
+                      <div className="flex items-center gap-0.5 flex-shrink-0">
+                        <button
+                          onClick={() => {
+                            if (i === 0) return;
+                            const next = [...routeItems];
+                            [next[i - 1], next[i]] = [next[i], next[i - 1]];
+                            setRouteItems(next);
+                          }}
+                          disabled={i === 0}
+                          className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-700 disabled:opacity-20 transition-colors text-[10px]"
+                          title="上移"
+                        >▲</button>
+                        <button
+                          onClick={() => {
+                            if (i === routeItems.length - 1) return;
+                            const next = [...routeItems];
+                            [next[i], next[i + 1]] = [next[i + 1], next[i]];
+                            setRouteItems(next);
+                          }}
+                          disabled={i === routeItems.length - 1}
+                          className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-700 disabled:opacity-20 transition-colors text-[10px]"
+                          title="下移"
+                        >▼</button>
+                        <button onClick={() => toggleRoute(r)} className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors text-[10px]">
+                          ✖
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

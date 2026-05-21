@@ -746,7 +746,7 @@ export default function App() {
             {/* Regions navigation */}
             <div className="flex flex-row lg:flex-col gap-1 lg:gap-2 overflow-x-auto lg:overflow-visible no-scrollbar pb-2 lg:pb-0 px-1 lg:px-0 mt-1">
               <button 
-                  onClick={() => { setActiveRegionId('all'); setActiveTab('explore'); setSearchQuery(''); setActiveZone(null); }}
+                  onClick={() => { setActiveRegionId('all'); setActiveTab('explore'); setActiveZone(null); }}
                   className={cn(
                     "py-2 px-4 lg:py-3 lg:h-14 flex-shrink-0 rounded-2xl flex flex-col lg:flex-row items-center justify-center lg:justify-start transition-all gap-1 lg:gap-4 min-w-[80px] lg:min-w-0 relative group",
                     activeRegionId === 'all' && activeTab === 'explore'
@@ -760,7 +760,7 @@ export default function App() {
               {regions.map(r => (
                   <button 
                   key={r.id}
-                  onClick={() => { setActiveRegionId(r.id); setActiveTab('explore'); setSearchQuery(''); setActiveZone(null); }}
+                  onClick={() => { setActiveRegionId(r.id); setActiveTab('explore'); setActiveZone(null); }}
                   className={cn(
                     "py-2 px-4 lg:py-3 lg:h-14 flex-shrink-0 rounded-2xl flex flex-col lg:flex-row items-center justify-center lg:justify-start transition-all gap-1 lg:gap-4 min-w-[80px] lg:min-w-0 relative group",
                     activeRegionId === r.id && activeTab === 'explore'
@@ -773,7 +773,7 @@ export default function App() {
                 </button>
               ))}
               <button 
-                  onClick={() => { setActiveRegionId('custom'); setActiveTab('explore'); setSearchQuery(''); setActiveZone(null); }}
+                  onClick={() => { setActiveRegionId('custom'); setActiveTab('explore'); setActiveZone(null); }}
                   className={cn(
                     "py-2 px-4 lg:py-3 lg:h-14 flex-shrink-0 rounded-2xl flex flex-col lg:flex-row items-center justify-center lg:justify-start transition-all gap-1 lg:gap-4 min-w-[80px] lg:min-w-0 relative group",
                     activeRegionId === 'custom' && activeTab === 'explore'

@@ -4,6 +4,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useFirestoreSync } from '../hooks/useFirestoreSync';
 import { Expense, PAYMENT_METHODS, CATEGORIES, BENEFICIARIES, ZONES, CONSTANTS, INITIAL_SUNK_COSTS } from '../data-expense';
+import { motion, AnimatePresence } from 'motion/react';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -740,21 +741,33 @@ export default function ExpensePanel() {
       )}
 
       {/* QUICK ENTRY MODAL */}
+      <AnimatePresence>
       {isFabOpen && (
         <div className="fixed inset-0 z-[100] flex flex-col justify-end">
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsFabOpen(false)}></div>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm" 
+            onClick={() => setIsFabOpen(false)}
+          />
           
-          <div 
-            className="bg-white w-full rounded-t-[2rem] shadow-2xl relative z-10 animate-in slide-in-from-bottom duration-300 max-h-[75vh] flex flex-col"
-            onTouchStart={(e) => setTouchStartY(e.touches[0].clientY)}
-            onTouchEnd={(e) => {
-              const touchEndY = e.changedTouches[0].clientY;
-              if (touchEndY - touchStartY > 60) {
+          <motion.div 
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            drag="y"
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0, bottom: 0.5 }}
+            onDragEnd={(e, { offset, velocity }) => {
+              if (offset.y > 100 || velocity.y > 500) {
                 setIsFabOpen(false);
               }
             }}
+            className="bg-white w-full rounded-t-[2rem] shadow-2xl relative z-10 max-h-[75vh] flex flex-col"
           >
-            <div className="shrink-0 bg-white/90 backdrop-blur pb-2 pt-3 px-6 border-b border-gray-100 flex flex-col items-center justify-between">
+            <div className="shrink-0 bg-white/90 backdrop-blur pb-2 pt-3 px-6 border-b border-gray-100 flex flex-col items-center justify-between rounded-t-[2rem] overflow-hidden">
               <div className="w-12 h-1.5 bg-gray-200 rounded-full mb-3"></div>
               <div className="w-full flex items-center justify-between">
                 <h3 className="font-black text-lg text-gray-800">记壹笔</h3>
@@ -963,9 +976,10 @@ export default function ExpensePanel() {
                 确认提交
               </button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
+      </AnimatePresence>
 
       {/* TOP UP MODAL */}
       {isTopUpOpen && (

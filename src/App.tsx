@@ -28,6 +28,8 @@ export default function App() {
   const [activeZone, setActiveZone] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showMap, setShowMap] = useState(false);
+  const [focusedLocId, setFocusedLocId] = useState<string | null>(null);
+  const [showRouteOnly, setShowRouteOnly] = useState(false);
   
   const [compareSelected, setCompareSelected] = useState<any[]>([]);
   const [routeItems, setRouteItems] = useFirestoreSync<any[]>('routeItems', 'my_app_routeItems', []);
@@ -479,8 +481,22 @@ export default function App() {
       setDeletedRouteItem(null);
     }
   };
+  const generateGoogleMapsUrl = (items: any[]) => {
+    const valid = items.filter(i => i.lat && i.lng);
+    if (valid.length === 0) return '';
+    if (valid.length === 1) {
+      return `https://www.google.com/maps/search/?api=1&query=${valid[0].lat},${valid[0].lng}`;
+    }
+    const origin = `${valid[0].lat},${valid[0].lng}`;
+    const dest = `${valid[valid.length - 1].lat},${valid[valid.length - 1].lng}`;
+    const waypoints = valid.slice(1, -1).map(i => `${i.lat},${i.lng}`).join('|');
+    let url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}`;
+    if (waypoints) url += `&waypoints=${waypoints}`;
+    return url;
+  };
 
   const optimizeRoute = () => {
+
     if (routeItems.length < 2) {
       alert('You need at least 2 locations to optimize the route.');
       return;
@@ -911,7 +927,7 @@ export default function App() {
                     </div>
                   ))}
                 </div>
-                <div className="flex gap-2 mt-auto pt-2">
+                                <div className="flex gap-2 mt-auto pt-2">
                   <button 
                     className="bg-[#2D3436] text-white hover:bg-black px-4 py-2 rounded-xl font-bold text-[10px] uppercase flex-1 transition-colors whitespace-nowrap"
                     onClick={optimizeRoute}
@@ -922,9 +938,35 @@ export default function App() {
                     className="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2 rounded-xl font-bold text-[10px] uppercase flex-1 transition-colors whitespace-nowrap"
                     onClick={() => setRouteItems([])}
                   >
-                    Clear All
+                    清空
                   </button>
                 </div>
+                
+                {/* NEW ROW for Route Actions */}
+                {routeItems.length > 0 && (
+                  <div className="flex gap-2 mt-2 pt-2 border-t border-gray-100">
+                    <button 
+                      className="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-3 py-2 rounded-xl font-bold text-[10px] uppercase flex-1 transition-colors flex items-center justify-center gap-1"
+                      onClick={() => {
+                        setShowRouteOnly(true);
+                        setShowMap(true);
+                      }}
+                    >
+                      <MapPin className="w-3 h-3" />
+                      路线图
+                    </button>
+                    <button 
+                      className="bg-green-50 hover:bg-green-100 text-green-600 px-3 py-2 rounded-xl font-bold text-[10px] uppercase flex-1 transition-colors flex items-center justify-center gap-1"
+                      onClick={() => {
+                        const url = generateGoogleMapsUrl(routeItems);
+                        if (url) window.open(url, '_blank');
+                      }}
+                    >
+                      <Navigation className="w-3 h-3" />
+                      导航
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </aside>
@@ -945,9 +987,19 @@ export default function App() {
                   {!searchQuery && (
                     <div className="flex items-center gap-3">
                       <span className="hidden sm:block text-[9px] font-black uppercase tracking-[0.2em] text-gray-300">Curated Destinations</span>
-                      {/* Map Toggle Button */}
+                                            {/* Map Toggle Button */}
                       <button 
-                        onClick={() => setShowMap(!showMap)} 
+                        onClick={() => {
+                          if (showMap) {
+                            setShowMap(false);
+                            setFocusedLocId(null);
+                            setShowRouteOnly(false);
+                          } else {
+                            setShowMap(true);
+                            setShowRouteOnly(false);
+                            setFocusedLocId(null);
+                          }
+                        }} 
                         className={`px-3 py-1 rounded-xl text-[10px] font-bold flex items-center gap-1 transition-colors ${showMap ? 'bg-indigo-50 text-indigo-600 border border-indigo-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'}`}
                       >
                         <Map className="w-3 h-3" /> {showMap ? '返回列表' : '地图模式'}
@@ -1039,11 +1091,15 @@ export default function App() {
                       </div>
                     </div>
                   )
-                                ) : showMap ? (
+                                                ) : showMap ? (
                   <MapComponent 
-                    locs={filteredLocs} 
+                    locs={showRouteOnly ? routeItems : filteredLocs} 
+                    routeMode={showRouteOnly}
+                    focusedLocId={focusedLocId}
                     onLocClick={(uid) => { 
                       setShowMap(false);
+                      setShowRouteOnly(false);
+                      setFocusedLocId(null);
                       setExpandedCardId(uid);
                       setTimeout(() => {
                         const el = document.getElementById(`loc-card-${uid}`);

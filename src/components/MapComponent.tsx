@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -32,8 +32,29 @@ function MapBounds({ locs }: { locs: any[] }) {
   return null;
 }
 
-export function MapComponent({ locs, onLocClick }: { locs: any[], onLocClick: (uid: string) => void }) {
+function MapFocus({ focusedLocId, locs, markerRefs }: { focusedLocId?: string | null, locs: any[], markerRefs: React.MutableRefObject<{ [key: string]: L.Marker | null }> }) {
+  const map = useMap();
+  useEffect(() => {
+    if (focusedLocId) {
+      const loc = locs.find(l => l.uid === focusedLocId);
+      if (loc && loc.lat && loc.lng) {
+        map.flyTo([loc.lat, loc.lng], 16, { duration: 1.5 });
+        setTimeout(() => {
+          const marker = markerRefs.current[focusedLocId];
+          if (marker) {
+            marker.openPopup();
+          }
+        }, 1500);
+      }
+    }
+  }, [focusedLocId, locs, map, markerRefs]);
+  return null;
+}
+
+export function MapComponent({ locs, onLocClick, focusedLocId, routeMode = false }: { locs: any[], onLocClick: (uid: string) => void, focusedLocId?: string | null, routeMode?: boolean }) {
   const validLocs = locs.filter(l => l.lat && l.lng);
+  
+  const markerRefs = React.useRef<{ [key: string]: L.Marker | null }>({});
   
   const defaultCenter: [number, number] = [23.6978, 120.9605];
   
@@ -54,8 +75,21 @@ export function MapComponent({ locs, onLocClick }: { locs: any[], onLocClick: (u
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         />
         <MapBounds locs={validLocs} />
+        <MapFocus focusedLocId={focusedLocId} locs={validLocs} markerRefs={markerRefs} />
+        
+        {routeMode && validLocs.length > 1 && (
+          <Polyline 
+            positions={validLocs.map(l => [l.lat, l.lng] as [number, number])} 
+            pathOptions={{ color: '#0984e3', weight: 4, dashArray: '10, 10' }} 
+          />
+        )}
+        
         {validLocs.map((loc, i) => (
-          <Marker key={loc.uid || i} position={[loc.lat, loc.lng]}>
+          <Marker 
+            key={loc.uid || i} 
+            position={[loc.lat, loc.lng]}
+            ref={(r) => { if (r && loc.uid) markerRefs.current[loc.uid] = r; }}
+          >
             <Popup>
               <div className="min-w-[150px] font-sans">
                 <h4 className="font-bold text-sm mb-1 text-gray-800">{loc.n}</h4>

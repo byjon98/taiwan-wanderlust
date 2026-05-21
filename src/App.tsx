@@ -315,11 +315,27 @@ export default function App() {
   };
 
   const checkIsOpenAt = (loc: any, timeStr: string) => {
-    if (!timeStr || !loc.h || loc.h.length === 0) return true;
+    if (!timeStr) return true;
+    
+    let hours = loc.h;
+    
+    // Attempt to parse string hours if h is missing (for Custom Stores)
+    if ((!hours || hours.length === 0) && loc.hours) {
+      const times = [...loc.hours.matchAll(/(\d{1,2})[:：](\d{2})/g)];
+      if (times.length >= 2) {
+        let start = parseInt(times[0][1]) * 60 + parseInt(times[0][2]);
+        let end = parseInt(times[1][1]) * 60 + parseInt(times[1][2]);
+        if (end < start) end += 1440;
+        hours = [[start, end]];
+      }
+    }
+    
+    if (!hours || hours.length === 0) return true;
+    
     const [h, m] = timeStr.split(':').map(Number);
     const mins = h * 60 + m;
     
-    return loc.h.some(([start, end]: number[]) => {
+    return hours.some(([start, end]: number[]) => {
       if (end > 1440) {
         return mins >= start || mins <= (end - 1440);
       }
@@ -1144,7 +1160,7 @@ export default function App() {
                                   />
                                 </div>
 
-                                {loc.isInfoItem && loc.hours && (
+                                {(loc.isInfoItem || loc.isCustom) && loc.hours && (
                                    <div><span className="font-bold text-gray-400 uppercase text-[10px] tracking-widest block mb-0.5">营业时间</span> <span className="leading-snug">{loc.hours}</span></div>
                                 )}
                                 {loc.how && !loc.isInfoItem && <div><span className="font-bold text-gray-400 uppercase text-[10px] tracking-widest block mb-0.5">怎么去</span> <span className="leading-snug">🚇 {loc.how}</span></div>}

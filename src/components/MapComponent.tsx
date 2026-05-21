@@ -127,8 +127,10 @@ function LivePlayersMarker({ currentUser }: { currentUser: string }) {
 }
 
 // ─── Native Leaflet Control to jump to User's Location ───
-function LocateMeButton() {
+function LocateMeButton({ currentUser }: { currentUser: string }) {
   const map = useMap();
+  const myIcon = currentUser === 'Jon' ? '🧑🏻' : '👩🏻';
+  const myName = currentUser;
 
   useEffect(() => {
     const LocateControl = L.Control.extend({
@@ -144,7 +146,8 @@ function LocateMeButton() {
         container.style.cursor = 'pointer';
         container.style.transition = 'background-color 0.2s';
         
-        container.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4b5563" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>`;
+        container.innerHTML = `<span style="font-size: 15px;">${myIcon}</span>`;
+        container.title = `定位我的位置 (${myName})`;
         
         container.onmouseover = () => container.style.backgroundColor = '#f9fafb';
         container.onmouseout = () => container.style.backgroundColor = 'white';
@@ -155,7 +158,13 @@ function LocateMeButton() {
             (pos) => {
               map.flyTo([pos.coords.latitude, pos.coords.longitude], 16, { duration: 1.2 });
             },
-            () => alert("无法获取当前位置"),
+            (error) => {
+              let msg = "无法获取当前位置。";
+              if (error.code === 1) msg += "请检查您的浏览器/设备是否允许了网页的定位权限。";
+              else if (error.code === 2) msg += "由于室内无GPS讯号或网络问题，当前位置不可用。";
+              else msg += "定位超时或发生未知错误。";
+              alert(msg);
+            },
             { enableHighAccuracy: true, timeout: 5000 }
           );
         }
@@ -169,7 +178,7 @@ function LocateMeButton() {
     return () => {
       map.removeControl(control);
     };
-  }, [map]);
+  }, [map, myIcon, myName]);
 
   return null;
 }
@@ -313,7 +322,7 @@ export function MapComponent({
         
         {/* Locate Controls */}
         <LocatePartnerButton currentUser={currentUser} />
-        <LocateMeButton />
+        <LocateMeButton currentUser={currentUser} />
 
         {routeMode && routePath && (
           <Polyline

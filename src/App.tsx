@@ -72,10 +72,11 @@ export default function App() {
   const [newStoreJson, setNewStoreJson] = useState('');
 
   const handleAddStoreAI = () => {
-    const prompt = `我需要在我的旅游App中添加一家新店："${newStoreName}"。
-请搜索这家店的资料，并严格按照以下 JSON 格式输出，不要输出任何其他多余的文字或 markdown 标记（例如不要输出 \`\`\`json）：
+    const storeTarget = newStoreName || searchQuery || "值得推荐的店面";
+    const prompt = `作为专业的台湾旅游达人，请先通过网络搜索了解一下这家店(或相关推荐)："${storeTarget}"。
+了解清楚它的特色、评价和营业时间后，请严格按照以下 JSON 格式输出结果，不要输出任何其他多余的文字或 markdown 标记（例如不要输出 \`\`\`json）：
 {
-  "n": "${newStoreName}",
+  "n": "${newStoreName || '店名'}",
   "f": "店面特色、背景与必买简述",
   "do": "必做体验（一句话）",
   "eat": "必吃/必买推荐（逗号分隔）",
@@ -89,8 +90,7 @@ export default function App() {
   "hours": "营业时间（如 10:00 - 22:00）"
 }`;
     navigator.clipboard.writeText(prompt).then(() => {
-      alert('Prompt 已复制！将自动打开 Gemini，请粘贴并让其生成 JSON，复制生成的 JSON 后回到 App 继续。');
-      window.open('https://gemini.google.com/app', '_blank');
+      alert('Prompt 已复制！\\n\\n请手动前往 Gemini (或其他 AI) 粘贴对话，获取 JSON 后回来进入第二步粘贴。');
       setAddStoreStep(2);
     }).catch(() => {
       alert('自动复制失败，请重试');
@@ -345,7 +345,7 @@ export default function App() {
 
   const filteredLocs = useMemo(() => {
     let allLocs: any[] = [];
-    if (activeRegionId === 'all' || searchQuery) {
+    if (activeRegionId === 'all') {
       allLocs = regions.flatMap(r => r.locs.map((l, i) => ({ ...l, region: r.name, regionId: r.id, uid: `${r.id}-${i}-${l.n}` })));
     } else if (activeRegion) {
       allLocs = activeRegion.locs.map((l, i) => ({ ...l, region: activeRegion.name, regionId: activeRegion.id, uid: `${activeRegion.id}-${i}-${l.n}` }));
@@ -369,7 +369,7 @@ export default function App() {
     if (activeRegionId === 'custom') {
       // Show ALL custom stores in the "Newly Added" tab, sorted by newest
       sourceLocs = mappedCustoms;
-    } else if (activeRegionId === 'all' || searchQuery) {
+    } else if (activeRegionId === 'all') {
       // Show custom stores at the bottom of the "All" tab in original order
       sourceLocs = [...allLocs, ...mappedCustoms.slice().reverse()];
     } else {
@@ -1084,7 +1084,7 @@ export default function App() {
                               {Array.from({length: loc.s || 5}).map((_, i) => <span key={i}>★</span>)}
                               {loc.price && (
                                 <span className="ml-1.5 font-black text-[9px] md:text-[10px] text-gray-500 bg-gray-100 px-1 rounded border border-gray-200">
-                                  人均: {loc.price === 'cheap' ? 'NT$ 200⬇' : loc.price === 'mid' ? 'NT$ 200~800' : 'NT$ 800⬆'}
+                                  人均: {['cheap', 'mid', 'exp'].includes(loc.price) ? (loc.price === 'cheap' ? 'NT$ 200⬇' : loc.price === 'mid' ? 'NT$ 200~800' : 'NT$ 800⬆') : loc.price}
                                 </span>
                               )}
                               {loc.minSpend && (

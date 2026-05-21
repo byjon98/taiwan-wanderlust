@@ -449,10 +449,14 @@ export default function App() {
       compareSelected.map(c => `[${c.n}]: (位于${c.zone || '未知'}) - ${c.f || ''} - 价位${c.price || ''} - 必吃: ${c.eat || '无'} - 评价: ${c.r || '无'}`).join('\n');
     
     navigator.clipboard.writeText(prompt).then(() => {
-      const userCopy = window.confirm("已将对比提示词复制到剪贴板！\n\n即将跳转至 Gemini AI，请在输入框直接粘贴即可。");
-      if (userCopy !== null) {
-        window.open('https://gemini.google.com/app', '_blank');
-      }
+      // Show a brief native toast-like feedback
+      const el = document.createElement('div');
+      el.textContent = '✅ Prompt 已复制！去 Gemini 粘贴即可。';
+      el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#2D3436;color:#fff;padding:8px 18px;border-radius:999px;font-size:13px;font-weight:600;z-index:99999;pointer-events:none;animation:fadeInUp 0.3s ease';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 2800);
+    }).catch(() => {
+      alert('请手动复制以下 Prompt:\n\n' + prompt);
     });
   };
 
@@ -1082,20 +1086,18 @@ export default function App() {
                         onClick={() => {
                           const prompt = `我正在寻找关于 "${searchQuery}" 的地点信息。\n\n【如果这是一个连锁品牌或有多个分店】：请先简单列出主要的分店选项，向我确认是哪一家。\n【当我说出具体分店后（或如果只有一家店）】：请根据以下九大模块，给我一份极其详细的说明：\n1. 店面背景与特色 (有什么特别的？人家都介绍什么？如果马来西亚也有这个店，有什么是马来西亚没有这边有的)\n2. 推荐体验与必做什么 (What to do)\n3. 必吃/必买 (Must eat/buy)\n4. 避雷指南 (Pitfalls to avoid)\n5. 推荐指数 (Recommendation index)\n6. 营业时间\n7. 实用提示 (Tips)\n8. 地理位置与交通 (How to go)\n9. 其他补充\n\n另外，我还需要你提供：\n- 人均消费估计\n- 是否有抵消（低消）规则及具体金额\n- 综合的网络评价（褒贬都要有）\n- Google Map 的搜索链接\n- Apple Map 的搜索链接`;
                           navigator.clipboard.writeText(prompt).then(() => {
-                            alert('Prompt 已复制！现在带你去 Gemini 询问！请在输入框粘贴 (Ctrl+V 或 Cmd+V)。');
-                            window.open('https://gemini.google.com/app', '_blank');
-                          }).catch(() => {
-                            const userCopy = window.prompt('自动复制失败 😢 因为浏览器安全限制，请手动复制（Cmd+C 或 Ctrl+C）以下文字，然后按确定：', prompt);
-                            if (userCopy !== null) {
-                              window.open('https://gemini.google.com/app', '_blank');
-                            }
-                          });
+                            const el = document.createElement('div');
+                            el.textContent = '✅ Prompt 已复制！去 Gemini 粘贴即可。';
+                            el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#2D3436;color:#fff;padding:8px 18px;border-radius:999px;font-size:13px;font-weight:600;z-index:99999;pointer-events:none;';
+                            document.body.appendChild(el);
+                            setTimeout(() => el.remove(), 2800);
+                          }).catch(() => alert('请手动复制 Prompt'));
                         }}
                         className="bg-[#2D3436] hover:bg-black text-white px-5 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors"
                       >
-                        ✨ 去 Gemini AI 问问看！
+                        ✨ 复制 AI Prompt
                       </button>
-                      <p className="text-[10px] text-gray-400 mt-3">(会自动复制专属 Prompt)</p>
+                      <p className="text-[10px] text-gray-400 mt-3">(复制后去 Gemini / ChatGPT 粘贴即可)</p>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center p-8 mt-4 text-center">
@@ -1346,14 +1348,12 @@ export default function App() {
                                 e.stopPropagation();
                                 const prompt = `我正在寻找关于 "${loc.n}" 的地点信息，请根据以下九大模块，给我一份极其详细的说明：\n1. 店面背景与特色 (有什么特别的？人家都介绍什么？如果马来西亚也有这个店，有什么是马来西亚没有这边有的)\n2. 推荐体验与必做什么 (What to do)\n3. 必吃/必买 (Must eat/buy)\n4. 避雷指南 (Pitfalls to avoid)\n5. 推荐指数 (Recommendation index)\n6. 营业时间\n7. 实用提示 (Tips)\n8. 地理位置与交通 (How to go)\n9. 其他补充\n\n另外，我还需要你提供：\n- 人均消费估计\n- 是否有抵消（低消）规则及具体金额\n- 综合的网络评价（褒贬都要有）\n- Google Map 的搜索链接\n- Apple Map 的搜索链接`;
                                 navigator.clipboard.writeText(prompt).then(() => {
-                                  alert('Prompt 已复制！现在带你去 Gemini 询问！请在输入框粘贴 (Ctrl+V 或 Cmd+V)。');
-                                  window.open('https://gemini.google.com/app', '_blank');
-                                }).catch(() => {
-                                  const userCopy = window.prompt('自动复制失败 😢 因为浏览器安全限制，请手动复制（Cmd+C 或 Ctrl+C）以下文字，然后按确定：', prompt);
-                                  if (userCopy !== null) {
-                                    window.open('https://gemini.google.com/app', '_blank');
-                                  }
-                                });
+                                  const el = document.createElement('div');
+                                  el.textContent = '✅ Prompt 已复制！去 Gemini 粘贴即可。';
+                                  el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#2D3436;color:#fff;padding:8px 18px;border-radius:999px;font-size:13px;font-weight:600;z-index:99999;pointer-events:none;';
+                                  document.body.appendChild(el);
+                                  setTimeout(() => el.remove(), 2800);
+                                }).catch(() => alert('请手动复制 Prompt'));
                               }}
                               className="w-9 h-9 rounded-full flex items-center justify-center transition-all bg-indigo-50 hover:bg-indigo-100 text-indigo-500 border border-indigo-200"
                               title="问 AI 这个店的详情"
@@ -1396,18 +1396,16 @@ export default function App() {
                           e.stopPropagation();
                           const prompt = `我正在寻找关于 "${searchQuery}" 的地点信息。\n\n【如果这是一个连锁品牌或有多个分店】：请先简单列出主要的分店选项，向我确认是哪一家。\n【当我说出具体分店后（或如果只有一家店）】：请根据以下九大模块，给我一份极其详细的说明：\n1. 店面背景与特色 (有什么特别的？人家都介绍什么？如果马来西亚也有这个店，有什么是马来西亚没有这边有的)\n2. 推荐体验与必做什么 (What to do)\n3. 必吃/必买 (Must eat/buy)\n4. 避雷指南 (Pitfalls to avoid)\n5. 推荐指数 (Recommendation index)\n6. 营业时间\n7. 实用提示 (Tips)\n8. 地理位置与交通 (How to go)\n9. 其他补充\n\n另外，我还需要你提供：\n- 人均消费估计\n- 是否有抵消（低消）规则及具体金额\n- 综合的网络评价（褒贬都要有）\n- Google Map 的搜索链接\n- Apple Map 的搜索链接`;
                           navigator.clipboard.writeText(prompt).then(() => {
-                            alert('Prompt 已复制！现在带你去 Gemini 询问！请在输入框粘贴 (Ctrl+V 或 Cmd+V)。');
-                            window.open('https://gemini.google.com/app', '_blank');
-                          }).catch(() => {
-                            const userCopy = window.prompt('自动复制失败 😢 因为浏览器安全限制，请手动复制（Cmd+C 或 Ctrl+C）以下文字，然后按确定：', prompt);
-                            if (userCopy !== null) {
-                              window.open('https://gemini.google.com/app', '_blank');
-                            }
-                          });
+                            const el = document.createElement('div');
+                            el.textContent = '✅ Prompt 已复制！去 Gemini 粘贴即可。';
+                            el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#2D3436;color:#fff;padding:8px 18px;border-radius:999px;font-size:13px;font-weight:600;z-index:99999;pointer-events:none;';
+                            document.body.appendChild(el);
+                            setTimeout(() => el.remove(), 2800);
+                          }).catch(() => alert('请手动复制 Prompt'));
                         }}
                         className="bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors shadow-sm cursor-pointer"
                       >
-                        <Sparkles className="w-4 h-4" /> 去 Gemini AI 问问看
+                        <Sparkles className="w-4 h-4" /> 复制 AI Prompt
                       </button>
                     </div>
                   )}

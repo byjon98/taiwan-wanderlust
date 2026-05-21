@@ -760,14 +760,13 @@ export default function App() {
             >
               <MapPin className="w-4 h-4" />
             </button>
-            {showTopBtn && (
-              <button 
-                onClick={scrollToTop}
-                className="p-1.5 rounded-full bg-[#2D3436] text-white hover:bg-black transition-all shadow-md animate-in fade-in zoom-in duration-300"
-              >
-                <ArrowUp className="w-4 h-4 stroke-[3]" />
-              </button>
-            )}
+            <button 
+              onClick={scrollToTop}
+              className="p-1.5 rounded-full bg-[#2D3436] text-white hover:bg-black transition-colors shadow-sm"
+              title="回到顶部"
+            >
+              <ArrowUp className="w-4 h-4 stroke-[3]" />
+            </button>
           </div>
         </div>
         
@@ -785,15 +784,13 @@ export default function App() {
         </div>
 
         <div className="hidden md:flex gap-3 items-center">
-          {showTopBtn && (
-            <button 
-              onClick={scrollToTop}
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-[#2D3436] text-white hover:bg-black transition-all shadow-md animate-in fade-in zoom-in duration-300"
-              title="回到顶部"
-            >
-              <ArrowUp className="w-4 h-4 stroke-[3]" />
-            </button>
-          )}
+          <button 
+            onClick={scrollToTop}
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-[#2D3436] text-white hover:bg-black transition-colors shadow-sm"
+            title="回到顶部"
+          >
+            <ArrowUp className="w-4 h-4 stroke-[3]" />
+          </button>
           <button 
             onClick={locateUser}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-gray-50 text-gray-600 font-bold text-[11px] transition-colors border border-gray-200"
@@ -1521,10 +1518,7 @@ export default function App() {
           <button 
             onClick={() => {
               if (activeTab === 'explore') {
-                setActiveRegionId('all');
-                setSearchQuery('');
-                setActiveZone(null);
-                scrollToTop();
+                setShowMap(false);
               }
               setActiveTab('explore');
             }}

@@ -733,7 +733,15 @@ export default function ExpensePanel() {
 
       </div>
 
-
+      {/* Floating Add Expense Button */}
+      {activeTab === 'dashboard' && (
+        <button 
+          onClick={() => setIsFabOpen(true)}
+          className="fixed bottom-24 right-6 md:bottom-8 md:right-8 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.2)] flex flex-col items-center justify-center z-[60] hover:bg-indigo-700 hover:-translate-y-1 transition-all duration-300 group animate-in fade-in zoom-in"
+        >
+          <Plus className="w-7 h-7 stroke-[2.5]" />
+        </button>
+      )}
 
       {/* QUICK ENTRY MODAL */}
       {isFabOpen && (

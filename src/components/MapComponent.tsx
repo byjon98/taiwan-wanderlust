@@ -4,6 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { Store, LiveLocation } from '../types';
 
 // Fix Leaflet's default icon path issues with Vite
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -18,7 +19,7 @@ L.Icon.Default.mergeOptions({
 });
 
 // ─── Only fits bounds when the SET of loc UIDs changes (not on every re-render) ───
-function MapBounds({ locs, enabled }: { locs: any[], enabled: boolean }) {
+function MapBounds({ locs, enabled }: { locs: Store[], enabled: boolean }) {
   const map = useMap();
   const prevHashRef = useRef('');
 
@@ -38,7 +39,7 @@ function MapBounds({ locs, enabled }: { locs: any[], enabled: boolean }) {
 // ─── Flies to a focused location once, then never again until focusedLocId changes ───
 function MapFocus({ focusedLocId, locs, markerRefs }: {
   focusedLocId?: string | null,
-  locs: any[],
+  locs: Store[],
   markerRefs: React.MutableRefObject<{ [key: string]: L.Marker | null }>
 }) {
   const map = useMap();
@@ -61,13 +62,13 @@ function MapFocus({ focusedLocId, locs, markerRefs }: {
 
 // ─── Real-time Multiplayer Location Tracking ───
 function LivePlayersMarker({ currentUser }: { currentUser: string }) {
-  const [players, setPlayers] = useState<Record<string, { lat: number, lng: number, timestamp: number }>>({});
+  const [players, setPlayers] = useState<Record<string, LiveLocation>>({});
 
   // 1. Listen to Firebase for all players' locations
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'trip', 'live_locations'), (docSnap) => {
       if (docSnap.exists()) {
-        setPlayers(docSnap.data() as any);
+        setPlayers(docSnap.data() as Record<string, LiveLocation>);
       }
     });
     return () => unsub();
@@ -191,7 +192,7 @@ function LocatePartnerButton({ currentUser }: { currentUser: string }) {
   const partnerIcon = currentUser === 'Jon' ? '👩🏻' : '🧑🏻';
 
   useEffect(() => {
-    let partnerLoc: { lat: number, lng: number, timestamp: number } | null = null;
+    let partnerLoc: LiveLocation | null = null;
     
     // Listen to partner location
     const unsub = onSnapshot(doc(db, 'trip', 'live_locations'), (docSnap) => {
@@ -262,9 +263,9 @@ export function MapComponent({
   routedUids = [],
 }: {
   currentUser?: string,
-  locs: any[],
+  locs: Store[],
   onLocClick: (uid: string) => void,
-  onAddToRoute?: (loc: any) => void,
+  onAddToRoute?: (loc: Store) => void,
   focusedLocId?: string | null,
   routeMode?: boolean,
   routedUids?: string[],

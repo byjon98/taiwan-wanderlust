@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, enableIndexedDbPersistence, disableNetwork, enableNetwork } from 'firebase/firestore';
+import { getAuth, signInAnonymously } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDAQn6dFZd56SsogKQ9m3Skr-FNFAxBGhA",
@@ -12,6 +13,12 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+
+// Authenticate anonymously so we can lock down security rules later
+signInAnonymously(auth).catch((error) => {
+  console.error("Firebase Auth Error:", error.code, error.message);
+});
 
 // Enable offline persistence
 enableIndexedDbPersistence(db).catch((err) => {
@@ -22,4 +29,4 @@ enableIndexedDbPersistence(db).catch((err) => {
   }
 });
 
-export { db, disableNetwork, enableNetwork };
+export { db, auth, disableNetwork, enableNetwork };

@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useFirestoreSync } from './hooks/useFirestoreSync';
+import { useAppStore } from './store';
 import { regions } from './data';
 import { souvenirModules, groceryModules } from './data/info';
 import InfoPanel from './components/InfoPanel';
 import ItineraryPanel from './components/ItineraryPanel';
 import ExpensePanel from './components/ExpensePanel';
-import { Clock, Search, Map, Filter, ArrowUpDown, Info, Check, Plus, ShoppingBag, MapPin, ExternalLink, Scale, Navigation, Sparkles, ChevronRight, Calendar, Home, Wallet } from 'lucide-react';
+import { Clock as ClockIcon, Search, Map, Filter, ArrowUpDown, Info, Check, Plus, ShoppingBag, MapPin, ExternalLink, Scale, Navigation, Sparkles, ChevronRight, Calendar, Home, Wallet } from 'lucide-react';
 import { MapComponent } from './components/MapComponent';
+import { Clock } from './components/Clock';
+import { Store, RouteItem } from './types';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -23,61 +25,51 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export default function App() {
-  const [viewMode, setViewMode] = useState<'landing' | 'itinerary'>('landing');
-  const [activeRegionId, setActiveRegionId] = useState('all');
+  const {
+    viewMode, setViewMode,
+    activeRegionId, setActiveRegionId,
+    searchQuery, setSearchQuery,
+    routeItems, setRouteItems,
+    customStores, setCustomStores,
+    storeRemarks, setStoreRemarks,
+    currentUser, setCurrentUser
+  } = useAppStore();
+
   const [activeZone, setActiveZone] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [showMap, setShowMap] = useState(false);
   const [focusedLocId, setFocusedLocId] = useState<string | null>(null);
   const [showRouteOnly, setShowRouteOnly] = useState(false);
   
-  const [compareSelected, setCompareSelected] = useState<any[]>([]);
-  const [routeItems, setRouteItems] = useFirestoreSync<any[]>('routeItems', 'my_app_routeItems', []);
-  const [deletedRouteItem, setDeletedRouteItem] = useState<{ item: any, index: number } | null>(null);
-  const [deletedCustomStore, setDeletedCustomStore] = useState<{ item: any, index: number } | null>(null);
+  const [compareSelected, setCompareSelected] = useState<Store[]>([]);
+  // Backward compatibility wrapper
+  const handleUserToggle = () => {
+    setCurrentUser(currentUser === 'Jon' ? 'June' : 'Jon');
+  };
 
-  // Auto-close undo toasts
+  const [deletedRouteItem, setDeletedRouteItem] = useState<{ item: RouteItem, index: number } | null>(null);
+  const [deletedCustomStore, setDeletedCustomStore] = useState<{ item: Store, index: number } | null>(null);
+
   useEffect(() => {
     let timer1: NodeJS.Timeout;
-    if (deletedRouteItem) {
-      timer1 = setTimeout(() => setDeletedRouteItem(null), 5000);
-    }
+    if (deletedRouteItem) timer1 = setTimeout(() => setDeletedRouteItem(null), 5000);
     return () => clearTimeout(timer1);
   }, [deletedRouteItem]);
 
   useEffect(() => {
     let timer2: NodeJS.Timeout;
-    if (deletedCustomStore) {
-      timer2 = setTimeout(() => setDeletedCustomStore(null), 5000);
-    }
+    if (deletedCustomStore) timer2 = setTimeout(() => setDeletedCustomStore(null), 5000);
     return () => clearTimeout(timer2);
   }, [deletedCustomStore]);
 
-
-  const [customStores, setCustomStores] = useFirestoreSync<any[]>('custom_stores', 'taiwan_trip_custom_stores_v1', []);
-  
   const getRegionIdForZone = (zone: string) => {
     if (!zone) return 'custom';
     for (const r of regions) {
       if (r.locs.some(l => l.zone === zone)) return r.id;
     }
-    // Handle partial matches (e.g. "信义区" matches "台北市信义区" or vice versa)
     for (const r of regions) {
       if (r.locs.some(l => l.zone && (l.zone.includes(zone) || zone.includes(l.zone)))) return r.id;
     }
     return 'custom';
-  };
-
-  const [storeRemarks, setStoreRemarks] = useFirestoreSync<Record<string, {text: string, history: string[], future: string[]}>>('store_remarks', 'taiwan_trip_remarks_v1', {});
-  const [currentUser, setCurrentUser] = useState<'Jon' | 'June'>(() => {
-    return (localStorage.getItem('taiwan_trip_whoami') as 'Jon' | 'June') || 'Jon';
-  });
-  
-  const handleUserToggle = () => {
-    // Kept for backward compatibility if used elsewhere, but we now use direct setters
-    const nextUser = currentUser === 'Jon' ? 'June' : 'Jon';
-    setCurrentUser(nextUser);
-    localStorage.setItem('taiwan_trip_whoami', nextUser);
   };
 
   const [showAddStoreModal, setShowAddStoreModal] = useState(false);
@@ -116,7 +108,12 @@ export default function App() {
 
   const saveCustomStore = () => {
     try {
-      const parsed = JSON.parse(newStoreJson);
+      let rawJson = newStoreJson;
+      const jsonMatch = rawJson.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        rawJson = jsonMatch[0];
+      }
+      const parsed = JSON.parse(rawJson);
       const newLoc = {
         ...parsed,
         uid: `custom-${Date.now()}-${parsed.n}`,
@@ -213,11 +210,10 @@ export default function App() {
   ], []);
 
   const [activeTab, setActiveTab] = useState<'explore' | 'info' | 'itinerary' | 'expense'>('explore');
-  const [time, setTime] = useState(new Date());
   const [showLocateModal, setShowLocateModal] = useState(false);
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const [showTopBtn, setShowTopBtn] = useState(false);
-
+  
   useEffect(() => {
     const main = document.getElementById('scroll-container-main');
     if (main) main.scrollTop = 0;
@@ -581,7 +577,7 @@ export default function App() {
                 TAIWAN WANDERLUST
               </h1>
               <p className="text-[10px] md:text-xs font-semibold text-[#636E72] uppercase tracking-[0.2em] md:tracking-[0.3em] leading-relaxed mt-2 text-center">
-                您的终极台湾探索指南 <span className="mx-3 opacity-30 block sm:inline my-2 sm:my-0">|</span> <span className="tabular-nums">{time.toLocaleTimeString('en-US', { timeZone: 'Asia/Taipei', hour12: false })}</span> LOCAL TIME
+                您的终极台湾探索指南 <span className="mx-3 opacity-30 block sm:inline my-2 sm:my-0">|</span> <Clock className="tabular-nums" /> LOCAL TIME
               </p>
             </div>
           </div>
@@ -704,7 +700,7 @@ export default function App() {
                 onClick={() => setViewMode('landing')} 
                 className="text-sm md:text-base font-black text-[#2D3436] tracking-tight cursor-pointer hover:opacity-80"
               >
-                TAIWAN WANDERLUST <span className="opacity-30 font-normal mx-1">|</span> <span className="text-[9px] md:text-[10px] text-gray-400 font-bold tracking-widest tabular-nums">{time.toLocaleTimeString('en-US', { timeZone: 'Asia/Taipei', hour12: false })}</span>
+                TAIWAN WANDERLUST <span className="opacity-30 font-normal mx-1">|</span> <Clock className="text-[9px] md:text-[10px] text-gray-400 font-bold tracking-widest tabular-nums" />
               </h1>
             </div>
             

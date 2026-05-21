@@ -57,6 +57,42 @@ function MapFocus({ focusedLocId, locs, markerRefs }: {
   return null;
 }
 
+// ─── Fetches user location once on mount and displays a blue dot ───
+function UserLocationMarker() {
+  const [position, setPosition] = useState<[number, number] | null>(null);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setPosition([pos.coords.latitude, pos.coords.longitude]);
+        },
+        (err) => {
+          console.error("无法获取当前位置:", err);
+        },
+        { enableHighAccuracy: false, maximumAge: 60000, timeout: 5000 }
+      );
+    }
+  }, []);
+
+  if (!position) return null;
+
+  const userIcon = L.divIcon({
+    className: 'custom-user-icon',
+    html: `<div class="w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-[0_0_8px_rgba(59,130,246,0.8)] animate-pulse"></div>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8]
+  });
+
+  return (
+    <Marker position={position} icon={userIcon}>
+      <Popup>
+        <div className="font-bold text-xs text-blue-600 text-center tracking-wide">📍 你的当前位置</div>
+      </Popup>
+    </Marker>
+  );
+}
+
 // ─── Main export ───
 export function MapComponent({
   locs,
@@ -121,6 +157,9 @@ export function MapComponent({
         {/* Only fit bounds when focusedLocId is NOT set (so flyTo won't fight fitBounds) */}
         <MapBounds locs={validLocs} enabled={!focusedLocId} />
         <MapFocus focusedLocId={focusedLocId} locs={validLocs} markerRefs={markerRefs} />
+        
+        {/* User's current location dot */}
+        <UserLocationMarker />
 
         {routeMode && routePath && (
           <Polyline

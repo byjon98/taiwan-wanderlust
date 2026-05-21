@@ -5,7 +5,7 @@ import { souvenirModules, groceryModules } from './data/info';
 import InfoPanel from './components/InfoPanel';
 import ItineraryPanel from './components/ItineraryPanel';
 import ExpensePanel from './components/ExpensePanel';
-import { Clock as ClockIcon, Search, Map, Filter, ArrowUpDown, Info, Check, Plus, ShoppingBag, MapPin, ExternalLink, Scale, Navigation, Sparkles, ChevronRight, Calendar, Home, Wallet } from 'lucide-react';
+import { Clock as ClockIcon, Search, Map, Filter, ArrowUpDown, Info, Check, Plus, ShoppingBag, MapPin, ExternalLink, Scale, Navigation, Sparkles, ChevronRight, Calendar, Home, Wallet, ArrowUp } from 'lucide-react';
 import { MapComponent } from './components/MapComponent';
 import { Clock } from './components/Clock';
 import { Store, RouteItem } from './types';
@@ -560,7 +560,7 @@ export default function App() {
 
   if (viewMode === 'landing') {
     return (
-      <div className="min-h-screen w-full bg-[#FAFAFA] text-[#2D3436] font-sans flex flex-col items-center justify-center p-6 text-center select-none relative overflow-hidden">
+      <div className="min-h-screen w-full bg-white text-[#2D3436] font-sans flex flex-col items-center justify-center p-6 text-center select-none relative overflow-hidden">
         
         {/* Subtle background decoration to give premium feel without clutter */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-tr from-gray-100 to-transparent rounded-full blur-3xl opacity-50 pointer-events-none -z-10" />
@@ -685,7 +685,7 @@ export default function App() {
   }
 
   return (
-    <div className="h-[100dvh] w-full bg-[#FAFAFA] text-[#2D3436] font-sans flex flex-col overflow-hidden leading-snug">
+    <div className="h-[100dvh] w-full bg-white text-[#2D3436] font-sans flex flex-col overflow-hidden leading-snug">
       {/* Header */}
       <header 
         onClick={(e) => {
@@ -756,10 +756,18 @@ export default function App() {
             </div>
             <button 
               onClick={locateUser}
-              className="p-2 rounded-full bg-gray-50 text-gray-400 hover:text-indigo-500 transition-colors border border-gray-200"
+              className="p-1.5 rounded-full bg-gray-50 text-gray-400 hover:text-indigo-500 transition-colors border border-gray-200"
             >
               <MapPin className="w-4 h-4" />
             </button>
+            {showTopBtn && (
+              <button 
+                onClick={scrollToTop}
+                className="p-1.5 rounded-full bg-[#2D3436] text-white hover:bg-black transition-all shadow-md animate-in fade-in zoom-in duration-300"
+              >
+                <ArrowUp className="w-4 h-4 stroke-[3]" />
+              </button>
+            )}
           </div>
         </div>
         
@@ -777,6 +785,15 @@ export default function App() {
         </div>
 
         <div className="hidden md:flex gap-3 items-center">
+          {showTopBtn && (
+            <button 
+              onClick={scrollToTop}
+              className="flex items-center justify-center w-8 h-8 rounded-full bg-[#2D3436] text-white hover:bg-black transition-all shadow-md animate-in fade-in zoom-in duration-300"
+              title="回到顶部"
+            >
+              <ArrowUp className="w-4 h-4 stroke-[3]" />
+            </button>
+          )}
           <button 
             onClick={locateUser}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-gray-50 text-gray-600 font-bold text-[11px] transition-colors border border-gray-200"
@@ -820,7 +837,7 @@ export default function App() {
 
       
 
-      <main id="scroll-container-main" onScroll={handleScroll} className="flex-1 flex flex-col lg:flex-row gap-4 p-2 md:p-4 lg:p-6 overflow-y-auto no-scrollbar w-full max-w-[1400px] mx-auto pb-20 md:pb-6">
+      <main id="scroll-container-main" onScroll={handleScroll} className="flex-1 flex flex-col lg:flex-row gap-4 p-2 md:p-4 lg:p-6 overflow-y-auto w-full max-w-[1400px] mx-auto pb-20 md:pb-6">
         {/* LEFT SIDEBAR (Regions + Op Hours + Filters + Route) */}
         {activeTab === 'explore' && (
           <aside className="flex flex-col gap-3 flex-shrink-0 pb-4 lg:pb-10 w-full lg:w-[240px] mt-2 md:mt-0">
@@ -1133,7 +1150,7 @@ export default function App() {
               </div>
 
               {/* Cards Grid */}
-              <div id="scroll-container-desktop" className="flex-1 no-scrollbar pb-8 pt-1 px-1 relative">
+              <div id="scroll-container-desktop" className="flex-1 pb-8 pt-1 px-1 relative">
                 {filteredLocs.length === 0 ? (
                   searchQuery.trim() !== '' ? (
                     <div className="flex flex-col items-center justify-center p-8 mt-4">
@@ -1502,7 +1519,15 @@ export default function App() {
           </button>
           
           <button 
-            onClick={() => setActiveTab('explore')}
+            onClick={() => {
+              if (activeTab === 'explore') {
+                setActiveRegionId('all');
+                setSearchQuery('');
+                setActiveZone(null);
+                scrollToTop();
+              }
+              setActiveTab('explore');
+            }}
             className={cn(
               "flex flex-col items-center gap-1 flex-1 transition-all",
               activeTab === 'explore' ? "text-indigo-600" : "text-gray-400"
@@ -1545,17 +1570,6 @@ export default function App() {
             <span className="text-[10px] font-black uppercase tracking-tighter">财务</span>
           </button>
         </div>
-
-        {/* Back to Top */}
-        {showTopBtn && (
-          <button 
-            onClick={scrollToTop}
-            className="fixed bottom-20 right-6 md:bottom-8 md:right-8 w-12 h-12 bg-[#2D3436] text-white rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.12)] flex flex-col items-center justify-center z-50 hover:bg-black hover:-translate-y-1 transition-all duration-300 group animate-in fade-in slide-in-from-bottom-5"
-          >
-            <div className="w-2 h-2 border-t-2 border-l-2 border-white transform rotate-45 mt-1 group-hover:-translate-y-0.5 transition-transform"></div>
-            <span className="text-[8px] font-black uppercase tracking-widest leading-none mt-1">Top</span>
-          </button>
-        )}
 
         {/* Undo Toast for Route Items */}
         {deletedRouteItem && (

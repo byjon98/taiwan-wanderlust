@@ -69,12 +69,13 @@ export default function App() {
   };
 
   const [storeRemarks, setStoreRemarks] = useFirestoreSync<Record<string, {text: string, history: string[], future: string[]}>>('store_remarks', 'taiwan_trip_remarks_v1', {});
-  const [currentUser, setCurrentUser] = useState<'Jon' | 'Partner'>(() => {
-    return (localStorage.getItem('taiwan_trip_whoami') as 'Jon' | 'Partner') || 'Jon';
+  const [currentUser, setCurrentUser] = useState<'Jon' | 'June'>(() => {
+    return (localStorage.getItem('taiwan_trip_whoami') as 'Jon' | 'June') || 'Jon';
   });
   
   const handleUserToggle = () => {
-    const nextUser = currentUser === 'Jon' ? 'Partner' : 'Jon';
+    // Kept for backward compatibility if used elsewhere, but we now use direct setters
+    const nextUser = currentUser === 'Jon' ? 'June' : 'Jon';
     setCurrentUser(nextUser);
     localStorage.setItem('taiwan_trip_whoami', nextUser);
   };
@@ -708,32 +709,45 @@ export default function App() {
             </div>
             
             {/* Identity Toggle */}
-            <button
-               onClick={handleUserToggle}
-               className={cn(
-                 "hidden md:flex ml-4 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest transition-colors flex-shrink-0 items-center gap-1.5 border shadow-sm cursor-pointer",
-                 currentUser === 'Jon' 
-                   ? "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100"
-                   : "bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100"
-               )}
-               title="点击切换身份"
-             >
-               {currentUser === 'Jon' ? '🧑🏻 我是 Jon' : '👩🏻 我是旅伴'}
-             </button>
+            <div className="hidden md:flex ml-4 bg-gray-100 p-0.5 rounded-full border border-gray-200 shadow-inner items-center flex-shrink-0">
+              <button
+                onClick={() => { setCurrentUser('Jon'); localStorage.setItem('taiwan_trip_whoami', 'Jon'); }}
+                className={cn(
+                  "px-3 py-1 rounded-full text-[10px] font-bold tracking-widest transition-all",
+                  currentUser === 'Jon' ? "bg-blue-500 text-white shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
+                )}
+              >
+                🧑🏻 Jon
+              </button>
+              <button
+                onClick={() => { setCurrentUser('June'); localStorage.setItem('taiwan_trip_whoami', 'June'); }}
+                className={cn(
+                  "px-3 py-1 rounded-full text-[10px] font-bold tracking-widest transition-all",
+                  currentUser === 'June' ? "bg-pink-500 text-white shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
+                )}
+              >
+                👩🏻 June
+              </button>
+            </div>
           </div>
           
-          <div className="flex md:hidden gap-2">
-            <button
-                 onClick={handleUserToggle}
-                 className={cn(
-                   "px-2.5 py-1 rounded-full text-[10px] font-bold tracking-widest transition-colors flex-shrink-0 items-center gap-1 border shadow-sm",
-                   currentUser === 'Jon' 
-                     ? "bg-blue-50 text-blue-600 border-blue-200"
-                     : "bg-pink-50 text-pink-600 border-pink-200"
-                 )}
-               >
-                 {currentUser === 'Jon' ? '🧑🏻' : '👩🏻'}
-            </button>
+          <div className="flex md:hidden gap-2 items-center">
+            <div className="flex bg-gray-100 p-0.5 rounded-full border border-gray-200 shadow-inner">
+              <button
+                onClick={() => { setCurrentUser('Jon'); localStorage.setItem('taiwan_trip_whoami', 'Jon'); }}
+                className={cn(
+                  "px-2.5 py-1 rounded-full text-[10px] transition-all",
+                  currentUser === 'Jon' ? "bg-blue-500 text-white shadow-sm" : "text-gray-500 grayscale opacity-50"
+                )}
+              >🧑🏻</button>
+              <button
+                onClick={() => { setCurrentUser('June'); localStorage.setItem('taiwan_trip_whoami', 'June'); }}
+                className={cn(
+                  "px-2.5 py-1 rounded-full text-[10px] transition-all",
+                  currentUser === 'June' ? "bg-pink-500 text-white shadow-sm" : "text-gray-500 grayscale opacity-50"
+                )}
+              >👩🏻</button>
+            </div>
             <button 
               onClick={locateUser}
               className="p-2 rounded-full bg-gray-50 text-gray-400 hover:text-indigo-500 transition-colors border border-gray-200"

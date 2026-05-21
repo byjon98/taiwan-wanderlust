@@ -173,6 +173,73 @@ function LocateMeButton() {
   return null;
 }
 
+// ─── Native Leaflet Control to jump to Partner's Location ───
+function LocatePartnerButton({ currentUser }: { currentUser: string }) {
+  const map = useMap();
+  const partnerName = currentUser === 'Jon' ? 'June' : 'Jon';
+  const partnerIcon = currentUser === 'Jon' ? '👩🏻' : '🧑🏻';
+
+  useEffect(() => {
+    let partnerLoc: { lat: number, lng: number, timestamp: number } | null = null;
+    
+    // Listen to partner location
+    const unsub = onSnapshot(doc(db, 'trip', 'live_locations'), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data[partnerName]) {
+          partnerLoc = data[partnerName];
+        }
+      }
+    });
+
+    const LocateControl = L.Control.extend({
+      options: { position: 'bottomright' },
+      onAdd: function () {
+        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+        container.style.backgroundColor = 'white';
+        container.style.width = '34px';
+        container.style.height = '34px';
+        container.style.display = 'flex';
+        container.style.alignItems = 'center';
+        container.style.justifyContent = 'center';
+        container.style.cursor = 'pointer';
+        container.style.transition = 'background-color 0.2s';
+        container.style.marginBottom = '8px'; // Space between buttons
+        
+        container.innerHTML = `<span style="font-size: 15px;">${partnerIcon}</span>`;
+        container.title = `定位 ${partnerName}`;
+        
+        container.onmouseover = () => container.style.backgroundColor = '#f9fafb';
+        container.onmouseout = () => container.style.backgroundColor = 'white';
+        
+        container.onclick = function(e) {
+          e.stopPropagation();
+          if (partnerLoc) {
+            const isOffline = (Date.now() - partnerLoc.timestamp) > 15 * 60 * 1000;
+            if (isOffline) {
+              alert(`${partnerName} 已离线超过15分钟，位置可能不准确。`);
+            }
+            map.flyTo([partnerLoc.lat, partnerLoc.lng], 16, { duration: 1.2 });
+          } else {
+            alert(`暂无 ${partnerName} 的位置信息`);
+          }
+        }
+        return container;
+      }
+    });
+
+    const control = new LocateControl();
+    map.addControl(control);
+    
+    return () => {
+      map.removeControl(control);
+      unsub();
+    };
+  }, [map, currentUser, partnerName, partnerIcon]);
+
+  return null;
+}
+
 // ─── Main export ───
 export function MapComponent({
   currentUser = 'Jon',
@@ -243,7 +310,8 @@ export function MapComponent({
         {/* Multiplayer location tracking */}
         <LivePlayersMarker currentUser={currentUser} />
         
-        {/* Locate Me Button */}
+        {/* Locate Controls */}
+        <LocatePartnerButton currentUser={currentUser} />
         <LocateMeButton />
 
         {routeMode && routePath && (

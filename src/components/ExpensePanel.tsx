@@ -416,11 +416,6 @@ export default function ExpensePanel() {
           <div>
             <h1 className="text-2xl font-black tracking-tight flex items-center gap-2">
               财务大盘
-              {activeTab === 'dashboard' && (
-                <button onClick={() => setIsFabOpen(true)} className="w-7 h-7 bg-black hover:bg-blue-400 text-white rounded-full flex items-center justify-center shadow-sm active:scale-95 transition-all">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                </button>
-              )}
             </h1>
             <div className="text-[10px] font-bold text-gray-400 mt-0.5">
               NT$ 100 ≈ MYR {(exchangeRate * 100).toFixed(2)}
@@ -737,9 +732,9 @@ export default function ExpensePanel() {
       {activeTab === 'dashboard' && (
         <button 
           onClick={() => setIsFabOpen(true)}
-          className="fixed bottom-24 right-6 md:bottom-8 md:right-8 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.2)] flex flex-col items-center justify-center z-[60] hover:bg-indigo-700 hover:-translate-y-1 transition-all duration-300 group animate-in fade-in zoom-in"
+          className="fixed bottom-[4.5rem] right-4 md:bottom-6 md:right-6 w-12 h-12 bg-white text-black border border-gray-200 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.15)] flex flex-col items-center justify-center z-[60] hover:bg-gray-50 hover:-translate-y-1 transition-all duration-300 group animate-in fade-in zoom-in"
         >
-          <Plus className="w-7 h-7 stroke-[2.5]" />
+          <Plus className="w-6 h-6 stroke-[3]" />
         </button>
       )}
 

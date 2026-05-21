@@ -834,7 +834,7 @@ export default function App() {
 
       
 
-      <main id="scroll-container-main" onScroll={handleScroll} className="flex-1 flex flex-col lg:flex-row gap-4 p-2 md:p-4 lg:p-6 overflow-y-auto w-full max-w-[1400px] mx-auto pb-20 md:pb-6">
+      <main id="scroll-container-main" onScroll={handleScroll} className="flex-1 flex flex-col lg:flex-row gap-4 p-2 md:p-4 lg:p-6 overflow-y-auto w-full pb-20 md:pb-6">
         {/* LEFT SIDEBAR (Regions + Op Hours + Filters + Route) */}
         {activeTab === 'explore' && (
           <aside className="flex flex-col gap-3 flex-shrink-0 pb-4 lg:pb-10 w-full lg:w-[240px] mt-2 md:mt-0">
@@ -1232,7 +1232,7 @@ export default function App() {
               }
             }, 300);
           }} 
-        /> ) : ( <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
+        /> ) : ( <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 md:gap-4">
                     {filteredLocs.map((loc, idx) => {
                       const isCompared = compareSelected.find(c => (c.uid && c.uid === loc.uid) || (!c.uid && c.n === loc.n));
                       const isRouted = routeItems.find(r => (r.uid && r.uid === loc.uid) || (!r.uid && r.n === loc.n));

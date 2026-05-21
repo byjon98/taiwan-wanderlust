@@ -6,6 +6,7 @@ import InfoPanel from './components/InfoPanel';
 import ItineraryPanel from './components/ItineraryPanel';
 import ExpensePanel from './components/ExpensePanel';
 import { Clock, Search, Map, Filter, ArrowUpDown, Info, Check, Plus, ShoppingBag, MapPin, ExternalLink, Scale, Navigation, Sparkles, ChevronRight, Calendar, Home, Wallet } from 'lucide-react';
+import { MapComponent } from './components/MapComponent';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 

@@ -69,6 +69,16 @@ export default function App() {
   };
 
   const [storeRemarks, setStoreRemarks] = useFirestoreSync<Record<string, {text: string, history: string[], future: string[]}>>('store_remarks', 'taiwan_trip_remarks_v1', {});
+  const [currentUser, setCurrentUser] = useState<'Jon' | 'Partner'>(() => {
+    return (localStorage.getItem('taiwan_trip_whoami') as 'Jon' | 'Partner') || 'Jon';
+  });
+  
+  const handleUserToggle = () => {
+    const nextUser = currentUser === 'Jon' ? 'Partner' : 'Jon';
+    setCurrentUser(nextUser);
+    localStorage.setItem('taiwan_trip_whoami', nextUser);
+  };
+
   const [showAddStoreModal, setShowAddStoreModal] = useState(false);
   const [addStoreStep, setAddStoreStep] = useState<1|2>(1);
   const [newStoreName, setNewStoreName] = useState('');
@@ -77,7 +87,7 @@ export default function App() {
 
   const handleAddStoreAI = () => {
     const storeTarget = newStoreName || searchQuery || "值得推荐的店面";
-    const prompt = `作为专业的台湾旅游达人，请先通过网络搜索了解一下这家店(或相关推荐)："${storeTarget}"。
+    const prompt = `作为专业的台湾旅游达人，请根据你的知识库为我介绍这家店(或相关推荐)："${storeTarget}"。
 了解清楚它的特色、评价和营业时间后，请严格按照以下 JSON 格式输出结果，不要输出任何其他多余的文字或 markdown 标记（例如不要输出 \`\`\`json）：
 {
   "n": "\${newStoreName || '店名'}",
@@ -92,8 +102,8 @@ export default function App() {
   "zone": "所属区域（例如台北信义区、台西、或者是你认为最合适的区域名）",
   "cuisine": "菜系/类型",
   "hours": "营业时间（如 10:00 - 22:00）",
-  "lat": "该店的精准纬度(数字)",
-  "lng": "该店的精准经度(数字)"
+  "lat": "该店的精准纬度(数字，例如 25.033。不要回答不知道或0，尽全力根据区位估算)",
+  "lng": "该店的精准经度(数字，例如 121.564。不要回答不知道或0，尽全力根据区位估算)"
 }`;
     navigator.clipboard.writeText(prompt).then(() => {
       alert('Prompt 已复制！\\n\\n请手动前往 Gemini (或其他 AI) 粘贴对话，获取 JSON 后回来进入第二步粘贴。');
@@ -696,14 +706,41 @@ export default function App() {
                 TAIWAN WANDERLUST <span className="opacity-30 font-normal mx-1">|</span> <span className="text-[9px] md:text-[10px] text-gray-400 font-bold tracking-widest">{time.toLocaleTimeString('en-US', { timeZone: 'Asia/Taipei', hour12: false })}</span>
               </h1>
             </div>
+            
+            {/* Identity Toggle */}
+            <button
+               onClick={handleUserToggle}
+               className={cn(
+                 "hidden md:flex ml-4 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest transition-colors flex-shrink-0 items-center gap-1.5 border shadow-sm cursor-pointer",
+                 currentUser === 'Jon' 
+                   ? "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100"
+                   : "bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100"
+               )}
+               title="点击切换身份"
+             >
+               {currentUser === 'Jon' ? '🧑🏻 我是 Jon' : '👩🏻 我是旅伴'}
+             </button>
           </div>
           
-          <button 
-            onClick={locateUser}
-            className="md:hidden p-2 rounded-full bg-gray-50 text-gray-400 hover:text-indigo-500 transition-colors"
-          >
-            <MapPin className="w-4 h-4" />
-          </button>
+          <div className="flex md:hidden gap-2">
+            <button
+                 onClick={handleUserToggle}
+                 className={cn(
+                   "px-2.5 py-1 rounded-full text-[10px] font-bold tracking-widest transition-colors flex-shrink-0 items-center gap-1 border shadow-sm",
+                   currentUser === 'Jon' 
+                     ? "bg-blue-50 text-blue-600 border-blue-200"
+                     : "bg-pink-50 text-pink-600 border-pink-200"
+                 )}
+               >
+                 {currentUser === 'Jon' ? '🧑🏻' : '👩🏻'}
+            </button>
+            <button 
+              onClick={locateUser}
+              className="p-2 rounded-full bg-gray-50 text-gray-400 hover:text-indigo-500 transition-colors border border-gray-200"
+            >
+              <MapPin className="w-4 h-4" />
+            </button>
+          </div>
         </div>
         
         <div className="flex-1 w-full md:max-w-md lg:max-w-lg md:mx-6">
@@ -1123,6 +1160,7 @@ export default function App() {
                   )
                                                 ) : showMap ? (
                   <MapComponent 
+                    currentUser={currentUser}
                     locs={showRouteOnly 
                       ? routeItems.map(r => {
                           const found = filteredLocs.find(l => l.uid === r.uid || l.n === r.n);

@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 // Fix Leaflet's default icon path issues with Vite
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -57,44 +59,75 @@ function MapFocus({ focusedLocId, locs, markerRefs }: {
   return null;
 }
 
-// ─── Fetches user location once on mount and displays a blue dot ───
-function UserLocationMarker() {
-  const [position, setPosition] = useState<[number, number] | null>(null);
+// ─── Real-time Multiplayer Location Tracking ───
+function LivePlayersMarker({ currentUser }: { currentUser: string }) {
+  const [players, setPlayers] = useState<Record<string, { lat: number, lng: number, timestamp: number }>>({});
 
+  // 1. Listen to Firebase for all players' locations
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setPosition([pos.coords.latitude, pos.coords.longitude]);
-        },
-        (err) => {
-          console.error("无法获取当前位置:", err);
-        },
-        { enableHighAccuracy: false, maximumAge: 60000, timeout: 5000 }
-      );
-    }
+    const unsub = onSnapshot(doc(db, 'trip', 'live_locations'), (docSnap) => {
+      if (docSnap.exists()) {
+        setPlayers(docSnap.data() as any);
+      }
+    });
+    return () => unsub();
   }, []);
 
-  if (!position) return null;
+  // 2. Watch own position and push to Firebase
+  useEffect(() => {
+    if (navigator.geolocation) {
+      const watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const locData = { lat: pos.coords.latitude, lng: pos.coords.longitude, timestamp: Date.now() };
+          setDoc(doc(db, 'trip', 'live_locations'), {
+            [currentUser]: locData
+          }, { merge: true }).catch(err => console.error("Live loc update failed", err));
+        },
+        (err) => console.error("无法获取当前位置:", err),
+        { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+      );
+      
+      return () => navigator.geolocation.clearWatch(watchId);
+    }
+  }, [currentUser]);
 
-  const userIcon = L.divIcon({
-    className: 'custom-user-icon',
-    html: `<div class="w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-[0_0_8px_rgba(59,130,246,0.8)] animate-pulse"></div>`,
-    iconSize: [16, 16],
-    iconAnchor: [8, 8]
-  });
+  const now = Date.now();
 
   return (
-    <Marker position={position} icon={userIcon}>
-      <Popup>
-        <div className="font-bold text-xs text-blue-600 text-center tracking-wide">📍 你的当前位置</div>
-      </Popup>
-    </Marker>
+    <>
+      {Object.entries(players).map(([playerName, data]) => {
+        const isOffline = (now - data.timestamp) > 15 * 60 * 1000; // 15 mins offline
+        const isJon = playerName === 'Jon';
+        
+        let bgColor = isOffline ? 'bg-gray-400' : (isJon ? 'bg-blue-500' : 'bg-pink-500');
+        let shadowColor = isOffline ? 'rgba(156,163,175,0.8)' : (isJon ? 'rgba(59,130,246,0.8)' : 'rgba(236,72,153,0.8)');
+        let pulseClass = isOffline ? '' : 'animate-pulse';
+        let emoji = isJon ? '🧑🏻' : '👩🏻';
+
+        const userIcon = L.divIcon({
+          className: 'custom-user-icon',
+          html: `<div class="w-4 h-4 ${bgColor} border-2 border-white rounded-full shadow-[0_0_8px_${shadowColor}] ${pulseClass}"></div>`,
+          iconSize: [16, 16],
+          iconAnchor: [8, 8]
+        });
+
+        return (
+          <Marker key={playerName} position={[data.lat, data.lng]} icon={userIcon}>
+            <Popup>
+              <div className="font-bold text-xs text-center tracking-wide text-gray-700">
+                {emoji} {playerName} {isOffline ? '(已离线)' : '(目前位置)'}
+              </div>
+            </Popup>
+          </Marker>
+        );
+      })}
+    </>
   );
 }
 
 // ─── Main export ───
 export function MapComponent({
+  currentUser = 'Jon',
   locs,
   onLocClick,
   onAddToRoute,
@@ -102,6 +135,7 @@ export function MapComponent({
   routeMode = false,
   routedUids = [],
 }: {
+  currentUser?: string,
   locs: any[],
   onLocClick: (uid: string) => void,
   onAddToRoute?: (loc: any) => void,
@@ -158,8 +192,8 @@ export function MapComponent({
         <MapBounds locs={validLocs} enabled={!focusedLocId} />
         <MapFocus focusedLocId={focusedLocId} locs={validLocs} markerRefs={markerRefs} />
         
-        {/* User's current location dot */}
-        <UserLocationMarker />
+        {/* Multiplayer location tracking */}
+        <LivePlayersMarker currentUser={currentUser} />
 
         {routeMode && routePath && (
           <Polyline

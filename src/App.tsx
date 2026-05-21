@@ -9,6 +9,7 @@ import { Clock as ClockIcon, Search, Map, Filter, ArrowUpDown, Info, Check, Plus
 import { MapComponent } from './components/MapComponent';
 import { Clock } from './components/Clock';
 import { Store, RouteItem } from './types';
+import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -686,7 +687,7 @@ export default function App() {
   return (
     <div className="h-[100dvh] w-full bg-[#FAFAFA] text-[#2D3436] font-sans flex flex-col overflow-hidden leading-snug">
       {/* Header */}
-      <header className="flex-shrink-0 bg-white border-b border-gray-100 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:h-[calc(4rem+env(safe-area-inset-top))] shadow-[0_2px_10px_rgba(0,0,0,0.02)] z-20 w-full relative gap-3">
+      <header className="flex-shrink-0 bg-white/70 backdrop-blur-xl border-b border-white/20 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:h-[calc(4rem+env(safe-area-inset-top))] shadow-[0_2px_10px_rgba(0,0,0,0.02)] z-50 w-full relative gap-3">
         <div className="flex items-center w-full md:w-auto justify-between md:justify-start gap-4">
           <div className="flex items-center gap-3">
             <div 
@@ -808,7 +809,64 @@ export default function App() {
         </div>
       </header>
 
-      <main id="scroll-container-main" onScroll={handleScroll} className="flex-1 flex flex-col lg:flex-row gap-4 p-2 md:p-4 lg:p-6 overflow-y-auto no-scrollbar w-full max-w-[1400px] mx-auto pb-20 md:pb-6">
+      {/* GLOBAL BACKGROUND MAP (Apple Maps Style) */}
+      <div className="fixed inset-0 z-0 pointer-events-auto">
+        <MapComponent 
+          currentUser={currentUser}
+          locs={showRouteOnly 
+            ? routeItems.map(r => {
+                const found = filteredLocs.find(l => l.uid === r.uid || l.n === r.n);
+                return found ? { ...r, lat: found.lat ?? r.lat, lng: found.lng ?? r.lng } : r;
+              })
+            : filteredLocs
+          } 
+          routeMode={showRouteOnly}
+          focusedLocId={focusedLocId}
+          routedUids={routeItems.map(r => r.uid ?? r.n)}
+          onAddToRoute={(loc) => {
+            const alreadyIn = routeItems.find(r => (r.uid && r.uid === loc.uid) || r.n === loc.n);
+            if (alreadyIn) {
+              setRouteItems(prev => prev.filter(r => !((r.uid && r.uid === loc.uid) || r.n === loc.n)));
+            } else {
+              setRouteItems(prev => [...prev, loc]);
+            }
+          }}
+          onLocClick={(uid) => { 
+            setShowMap(false);
+            setShowRouteOnly(false);
+            setFocusedLocId(null);
+            setExpandedCardId(uid);
+            setTimeout(() => {
+              const el = document.getElementById(`loc-card-${uid}`);
+              if (el) {
+                const main = document.getElementById('scroll-container-main');
+                if (main) {
+                  const mainRect = main.getBoundingClientRect();
+                  const elRect = el.getBoundingClientRect();
+                  main.scrollBy({ top: elRect.top - mainRect.top - 80, behavior: 'smooth' });
+                } else {
+                  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }
+            }, 300);
+          }} 
+        />
+      </div>
+
+      <main id="scroll-container-main" onScroll={handleScroll} className={cn(
+        "flex-1 flex flex-col gap-4 z-40 overflow-y-auto no-scrollbar pointer-events-auto",
+        "transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
+        // Mobile Bottom Sheet
+        "fixed bottom-0 left-0 right-0 h-[85dvh] bg-white/85 backdrop-blur-3xl rounded-t-[2rem] p-4 pb-24 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]",
+        showMap ? "translate-y-[calc(100%-80px)]" : "translate-y-0",
+        // Desktop Floating Sidebar (Apple Style)
+        "md:top-[calc(4rem+env(safe-area-inset-top)+24px)] md:bottom-6 md:left-6 md:right-auto md:w-[420px] md:h-auto md:translate-y-0 md:rounded-3xl md:border md:border-white/40 md:p-6"
+      )}>
+        {/* Bottom Sheet Drag Handle */}
+        <div 
+          className="md:hidden w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-4 cursor-pointer shrink-0" 
+          onClick={() => setShowMap(!showMap)} 
+        />
         {/* LEFT SIDEBAR (Regions + Op Hours + Filters + Route) */}
         {activeTab === 'explore' && (
           <aside className="flex flex-col gap-3 flex-shrink-0 pb-4 lg:pb-10 w-full lg:w-[240px] mt-2 md:mt-0">
@@ -1168,49 +1226,7 @@ export default function App() {
                       </div>
                     </div>
                   )
-                                                ) : showMap ? (
-                  <MapComponent 
-                    currentUser={currentUser}
-                    locs={showRouteOnly 
-                      ? routeItems.map(r => {
-                          const found = filteredLocs.find(l => l.uid === r.uid || l.n === r.n);
-                          return found ? { ...r, lat: found.lat ?? r.lat, lng: found.lng ?? r.lng } : r;
-                        })
-                      : filteredLocs
-                    } 
-                    routeMode={showRouteOnly}
-                    focusedLocId={focusedLocId}
-                    routedUids={routeItems.map(r => r.uid ?? r.n)}
-                    onAddToRoute={(loc) => {
-                      const alreadyIn = routeItems.find(r => (r.uid && r.uid === loc.uid) || r.n === loc.n);
-                      if (alreadyIn) {
-                        setRouteItems(prev => prev.filter(r => !((r.uid && r.uid === loc.uid) || r.n === loc.n)));
-                      } else {
-                        setRouteItems(prev => [...prev, loc]);
-                      }
-                    }}
-                    onLocClick={(uid) => { 
-                      setShowMap(false);
-                      setShowRouteOnly(false);
-                      setFocusedLocId(null);
-                      setExpandedCardId(uid);
-                      // Wait for the list to render, then scroll using the main container
-                      setTimeout(() => {
-                        const el = document.getElementById(`loc-card-${uid}`);
-                        if (el) {
-                          const main = document.getElementById('scroll-container-main');
-                          if (main) {
-                            const mainRect = main.getBoundingClientRect();
-                            const elRect = el.getBoundingClientRect();
-                            main.scrollBy({ top: elRect.top - mainRect.top - 80, behavior: 'smooth' });
-                          } else {
-                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                          }
-                        }
-                      }, 300);
-                    }} 
-                  />
-                ) : (
+                    ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
                     {filteredLocs.map((loc, idx) => {
                       const isCompared = compareSelected.find(c => (c.uid && c.uid === loc.uid) || (!c.uid && c.n === loc.n));
@@ -1293,93 +1309,73 @@ export default function App() {
                           
                           {loc.zone && <div className="text-[10px] md:text-[11px] font-bold text-gray-500 mt-1.5 flex items-center gap-1 line-clamp-1"><MapPin className="w-3 h-3 flex-shrink-0"/> {loc.zone}</div>}
                           
-                          {isExpanded && (
-                            <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                              <div className="text-sm font-medium text-[#2D3436] space-y-2">
-
-                                {loc.f && <div><span className="font-bold text-gray-400 uppercase text-[10px] tracking-widest block mb-0.5">特 色</span> <span className="leading-snug">{loc.f}</span></div>}
-                                {loc.do && <div><span className="font-bold text-gray-400 uppercase text-[10px] tracking-widest block mb-0.5">干 啥</span> <span className="leading-snug">{loc.do}</span></div>}
-                                {loc.eat && (
-                                  <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                                    <span className="font-bold text-gray-500 uppercase text-[10px] tracking-widest block mb-0.5">必吃推荐</span>
-                                    <span className="leading-snug font-medium text-gray-700">{loc.eat}</span>
+                          <AnimatePresence>
+                            {isExpanded && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="mt-4 pt-4 border-t border-gray-100/50 space-y-4">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {loc.f && <div><span className="font-bold text-gray-400 uppercase text-[10px] tracking-widest block mb-0.5">特 色</span> <span className="leading-snug">{loc.f}</span></div>}
+                                    {loc.do && <div><span className="font-bold text-gray-400 uppercase text-[10px] tracking-widest block mb-0.5">必做必买</span> <span className="leading-snug">{loc.do}</span></div>}
+                                    {loc.eat && <div><span className="font-bold text-gray-400 uppercase text-[10px] tracking-widest block mb-0.5">招牌必点</span> <span className="leading-snug font-bold text-orange-600">{loc.eat}</span></div>}
+                                    {loc.w && <div><span className="font-bold text-red-300 uppercase text-[10px] tracking-widest block mb-0.5">避雷提醒</span> <span className="leading-snug text-red-500">{loc.w}</span></div>}
+                                    {loc.tips && <div><span className="font-bold text-blue-300 uppercase text-[10px] tracking-widest block mb-0.5">实用提示</span> <span className="leading-snug text-blue-600">{loc.tips}</span></div>}
                                   </div>
-                                )}
-                                {loc.how && <div><span className="font-bold text-gray-400 uppercase text-[10px] tracking-widest block mb-0.5">🚗 怎么去</span> <span className="leading-snug">{loc.how}</span></div>}
-                                {loc.w && (
-                                  <div className="bg-red-50 p-3 rounded-xl border border-red-100">
-                                    <span className="font-bold text-red-500 uppercase text-[10px] tracking-widest block mb-0.5">避雷</span>
-                                    <span className="text-red-700 leading-snug">{loc.w}</span>
-                                  </div>
-                                )}
-                                {loc.r && <div><span className="font-bold text-gray-400 uppercase text-[10px] tracking-widest block mb-0.5">网络评价</span> <span className="italic text-gray-500 leading-snug">{loc.r}</span></div>}
-                                {(loc.h || loc.cl) && <div><span className="font-bold text-gray-400 uppercase text-[10px] tracking-widest block mb-0.5">营业时间</span> <span className="leading-snug">{hrsStr(loc.h)} {loc.cl ? `· 🚫 ${loc.cl}` : ''}</span></div>}
-                                
-                                {loc.tips && (
-                                  <div className="bg-sky-50 p-3 rounded-xl border border-sky-100">
-                                    <span className="font-bold text-sky-600 uppercase text-[10px] tracking-widest block mb-0.5">Tips</span>
-                                    <span className="text-sky-800 leading-snug">{loc.tips}</span>
-                                  </div>
-                                )}
-                                
-                                <div 
-                                  className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-xl relative"
-                                  onClick={e => e.stopPropagation()}
-                                  onTouchStart={e => e.stopPropagation()}
-                                >
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="font-bold text-gray-600 text-[11px] flex items-center gap-1">✏️ 我的备注 (可实时同步)</span>
-                                    <div className="flex gap-2 items-center">
-                                      <div className="flex gap-1">
-                                        <button onClick={() => handleRemarkUndo(loc.uid)} disabled={!storeRemarks[loc.uid]?.history?.length} className="px-2 py-0.5 bg-white border border-gray-200 rounded text-[9px] disabled:opacity-50 hover:bg-gray-100">撤销</button>
-                                        <button onClick={() => handleRemarkRedo(loc.uid)} disabled={!storeRemarks[loc.uid]?.future?.length} className="px-2 py-0.5 bg-white border border-gray-200 rounded text-[9px] disabled:opacity-50 hover:bg-gray-100">重做</button>
+                                  
+                                  <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-100 space-y-3">
+                                    <div className="flex flex-col gap-2">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <span className="font-bold text-gray-600 text-[11px] flex items-center gap-1">✏️ 我的备注 (可实时同步)</span>
+                                        <div className="flex gap-2 items-center">
+                                          <div className="flex gap-1">
+                                            <button onClick={() => handleRemarkUndo(loc.uid)} disabled={!storeRemarks[loc.uid]?.history?.length} className="px-2 py-0.5 bg-white border border-gray-200 rounded text-[9px] disabled:opacity-50 hover:bg-gray-100">撤销</button>
+                                            <button onClick={() => handleRemarkRedo(loc.uid)} disabled={!storeRemarks[loc.uid]?.future?.length} className="px-2 py-0.5 bg-white border border-gray-200 rounded text-[9px] disabled:opacity-50 hover:bg-gray-100">重做</button>
+                                          </div>
+                                          {loc.isCustom && (
+                                            <button 
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                const index = customStores.findIndex(c => c.uid === loc.uid);
+                                                setDeletedCustomStore({ item: loc, index });
+                                                setCustomStores(prev => prev.filter(c => c.uid !== loc.uid));
+                                              }}
+                                              className="px-2 py-0.5 bg-red-50 text-red-600 border border-red-200 rounded text-[9px] font-bold hover:bg-red-100"
+                                            >
+                                              🗑️ 删除店面
+                                            </button>
+                                          )}
+                                        </div>
                                       </div>
-                                      {loc.isCustom && (
-                                        <button 
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            const index = customStores.findIndex(c => c.uid === loc.uid);
-                                            setDeletedCustomStore({ item: loc, index });
-                                            setCustomStores(prev => prev.filter(c => c.uid !== loc.uid));
-                                          }}
-                                          className="px-2 py-0.5 bg-red-50 text-red-600 border border-red-200 rounded text-[9px] font-bold hover:bg-red-100"
-                                        >
-                                          🗑️ 删除店面
-                                        </button>
-                                      )}
+                                      <textarea 
+                                        className="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm text-gray-700 min-h-[60px] focus:outline-none focus:border-indigo-300 resize-none"
+                                        placeholder="在这里记录你的专属评价、想买的东西、或者任何 Markdown 笔记..."
+                                        value={storeRemarks[loc.uid]?.text || ''}
+                                        onChange={(e) => handleRemarkUpdate(loc.uid, e.target.value)}
+                                      />
                                     </div>
-                                  </div>
-                                  <textarea 
-                                    className="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm text-gray-700 min-h-[60px] focus:outline-none focus:border-indigo-300 resize-none"
-                                    placeholder="在这里记录你的专属评价、想买的东西、或者任何 Markdown 笔记..."
-                                    value={storeRemarks[loc.uid]?.text || ''}
-                                    onChange={(e) => handleRemarkUpdate(loc.uid, e.target.value)}
-                                  />
-                                </div>
 
-                                {(loc.isInfoItem || loc.isCustom) && loc.hours && (
-                                   <div><span className="font-bold text-gray-400 uppercase text-[10px] tracking-widest block mb-0.5">营业时间</span> <span className="leading-snug">{loc.hours}</span></div>
-                                )}
-                                {loc.how && !loc.isInfoItem && <div><span className="font-bold text-gray-400 uppercase text-[10px] tracking-widest block mb-0.5">怎么去</span> <span className="leading-snug">🚇 {loc.how}</span></div>}
-                              </div>
-                              
-                              <div className="flex gap-2 mt-5">
-                                <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.gq || loc.n)}`} target="_blank" rel="noreferrer" className="flex-1 text-center bg-gray-50 border border-gray-200 hover:bg-gray-100 rounded-xl py-2 text-[11px] font-bold text-gray-700 transition-colors">
-                                  🗺️ Google
-                                </a>
-                                <a href={`https://maps.apple.com/?q=${encodeURIComponent(loc.n)}`} target="_blank" rel="noreferrer" className="flex-1 text-center bg-gray-50 border border-gray-200 hover:bg-gray-100 rounded-xl py-2 text-[11px] font-bold text-gray-700 transition-colors">
-                                  🍎 Apple
-                                </a>
-                              </div>
-    
-                              {loc.chain && (
-                                <a href={`https://www.google.com/maps/search/${encodeURIComponent(loc.n + ' 分店')}`} target="_blank" rel="noreferrer" 
-                                   className="mt-3 flex items-center justify-center gap-1 text-[11px] font-bold bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 py-2 rounded-xl w-full transition-colors">
-                                  <Search className="w-3 h-3"/> Find Nearby Branches
-                                </a>
-                              )}
-                            </div>
-                          )}
+                                    {(loc.isInfoItem || loc.isCustom) && loc.hours && (
+                                      <div><span className="font-bold text-gray-400 uppercase text-[10px] tracking-widest block mb-0.5">营业时间</span> <span className="leading-snug">{loc.hours}</span></div>
+                                    )}
+                                    {loc.how && !loc.isInfoItem && <div><span className="font-bold text-gray-400 uppercase text-[10px] tracking-widest block mb-0.5">怎么去</span> <span className="leading-snug">🚇 {loc.how}</span></div>}
+                                  </div>
+                                  
+                                  <div className="flex gap-2 mt-5">
+                                    <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.gq || loc.n)}`} target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-1 bg-gradient-to-r from-blue-500 to-indigo-600 border-transparent text-white shadow-lg shadow-blue-500/20 hover:scale-105 rounded-xl py-3 text-[13px] font-bold transition-all">
+                                      📍 Google Maps 导航
+                                    </a>
+                                    <a href={`https://maps.apple.com/?q=${encodeURIComponent(loc.n)}`} target="_blank" rel="noreferrer" className="flex-1 text-center bg-gray-50 border border-gray-200 hover:bg-gray-100 rounded-xl py-3 text-[11px] font-bold text-gray-700 transition-colors">
+                                      🍎 Apple
+                                    </a>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                         
                         <div className="flex items-center justify-between mt-5 border-t border-gray-100 pt-4">

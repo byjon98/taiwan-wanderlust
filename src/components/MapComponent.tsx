@@ -17,9 +17,14 @@ L.Icon.Default.mergeOptions({
 
 function MapBounds({ locs }: { locs: any[] }) {
   const map = useMap();
+  const prevLocsRef = React.useRef('');
+  
   useEffect(() => {
     const validLocs = locs.filter(l => l.lat && l.lng);
-    if (validLocs.length > 0) {
+    const locsHash = validLocs.map(l => l.uid).join(',');
+    
+    if (validLocs.length > 0 && prevLocsRef.current !== locsHash) {
+      prevLocsRef.current = locsHash;
       const bounds = L.latLngBounds(validLocs.map(l => [l.lat, l.lng]));
       map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
     }

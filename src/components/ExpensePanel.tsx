@@ -745,7 +745,7 @@ export default function ExpensePanel() {
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsFabOpen(false)}></div>
           
           <div 
-            className="bg-white w-full rounded-t-[2rem] shadow-2xl relative z-10 animate-in slide-in-from-bottom duration-300 max-h-[90vh] flex flex-col"
+            className="bg-white w-full rounded-t-[2rem] shadow-2xl relative z-10 animate-in slide-in-from-bottom duration-300 max-h-[75vh] flex flex-col"
             onTouchStart={(e) => setTouchStartY(e.touches[0].clientY)}
             onTouchEnd={(e) => {
               const touchEndY = e.changedTouches[0].clientY;

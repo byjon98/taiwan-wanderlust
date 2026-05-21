@@ -62,6 +62,18 @@ export default defineConfig(({ mode }) => {
         devOptions: { enabled: false },
       }),
     ],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'react-vendor': ['react', 'react-dom'],
+            'leaflet-vendor': ['leaflet', 'react-leaflet'],
+            'lucide-icons': ['lucide-react'],
+            'firebase-vendor': ['firebase/app', 'firebase/firestore']
+          }
+        }
+      }
+    },
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },

@@ -734,7 +734,7 @@ export default function ExpensePanel() {
       {activeTab === 'dashboard' && (
         <button 
           onClick={() => setIsFabOpen(true)}
-          className="fixed bottom-[4.5rem] right-4 md:bottom-6 md:right-6 w-12 h-12 bg-white text-black border border-gray-200 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.15)] flex flex-col items-center justify-center z-[60] hover:bg-gray-50 hover:-translate-y-1 transition-all duration-300 group animate-in fade-in zoom-in"
+          className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 md:bottom-6 md:right-6 w-12 h-12 bg-white text-black border border-gray-200 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.15)] flex flex-col items-center justify-center z-[60] hover:bg-gray-50 hover:-translate-y-1 transition-all duration-300 group animate-in fade-in zoom-in"
         >
           <Plus className="w-6 h-6 stroke-[3]" />
         </button>

@@ -125,6 +125,54 @@ function LivePlayersMarker({ currentUser }: { currentUser: string }) {
   );
 }
 
+// ─── Native Leaflet Control to jump to User's Location ───
+function LocateMeButton() {
+  const map = useMap();
+
+  useEffect(() => {
+    const LocateControl = L.Control.extend({
+      options: { position: 'bottomright' },
+      onAdd: function () {
+        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+        container.style.backgroundColor = 'white';
+        container.style.width = '34px';
+        container.style.height = '34px';
+        container.style.display = 'flex';
+        container.style.alignItems = 'center';
+        container.style.justifyContent = 'center';
+        container.style.cursor = 'pointer';
+        container.style.transition = 'background-color 0.2s';
+        
+        container.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4b5563" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>`;
+        
+        container.onmouseover = () => container.style.backgroundColor = '#f9fafb';
+        container.onmouseout = () => container.style.backgroundColor = 'white';
+        
+        container.onclick = function(e) {
+          e.stopPropagation();
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              map.flyTo([pos.coords.latitude, pos.coords.longitude], 16, { duration: 1.2 });
+            },
+            () => alert("无法获取当前位置"),
+            { enableHighAccuracy: true, timeout: 5000 }
+          );
+        }
+        return container;
+      }
+    });
+
+    const control = new LocateControl();
+    map.addControl(control);
+    
+    return () => {
+      map.removeControl(control);
+    };
+  }, [map]);
+
+  return null;
+}
+
 // ─── Main export ───
 export function MapComponent({
   currentUser = 'Jon',
@@ -194,6 +242,9 @@ export function MapComponent({
         
         {/* Multiplayer location tracking */}
         <LivePlayersMarker currentUser={currentUser} />
+        
+        {/* Locate Me Button */}
+        <LocateMeButton />
 
         {routeMode && routePath && (
           <Polyline

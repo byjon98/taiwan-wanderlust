@@ -766,7 +766,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
                                               e.stopPropagation();
                                               const prompt = `我正在寻找关于 "${item.name}" 的详细旅行资讯。请帮我搜索并在九大模块中详细说明。`;
                                               navigator.clipboard.writeText(prompt);
-                                              window.open('https://gemini.google.com/app', '_blank');
+                                              alert('Prompt 已复制！');
                                             }}
                                             className="mt-4 w-full py-2 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-xl text-[10px] font-bold hover:bg-indigo-600 hover:text-white transition-colors"
                                            >

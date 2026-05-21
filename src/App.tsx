@@ -1123,34 +1123,41 @@ export default function App() {
                   <MapComponent 
                     locs={showRouteOnly 
                       ? routeItems.map(r => {
-                          // Enrich with lat/lng from filteredLocs if missing
-                          const found = [...filteredLocs, ...routeItems].find(l => l.uid === r.uid || l.n === r.n);
+                          const found = filteredLocs.find(l => l.uid === r.uid || l.n === r.n);
                           return found ? { ...r, lat: found.lat ?? r.lat, lng: found.lng ?? r.lng } : r;
                         })
                       : filteredLocs
                     } 
                     routeMode={showRouteOnly}
                     focusedLocId={focusedLocId}
+                    routedUids={routeItems.map(r => r.uid ?? r.n)}
+                    onAddToRoute={(loc) => {
+                      const alreadyIn = routeItems.find(r => (r.uid && r.uid === loc.uid) || r.n === loc.n);
+                      if (alreadyIn) {
+                        setRouteItems(prev => prev.filter(r => !((r.uid && r.uid === loc.uid) || r.n === loc.n)));
+                      } else {
+                        setRouteItems(prev => [...prev, loc]);
+                      }
+                    }}
                     onLocClick={(uid) => { 
                       setShowMap(false);
                       setShowRouteOnly(false);
                       setFocusedLocId(null);
                       setExpandedCardId(uid);
+                      // Wait for the list to render, then scroll using the main container
                       setTimeout(() => {
                         const el = document.getElementById(`loc-card-${uid}`);
                         if (el) {
-                          // Try the desktop scroll container first, then fall back to main
-                          const container = document.getElementById('scroll-container-desktop') ||
-                                            document.getElementById('scroll-container-main');
-                          if (container) {
-                            const containerRect = container.getBoundingClientRect();
+                          const main = document.getElementById('scroll-container-main');
+                          if (main) {
+                            const mainRect = main.getBoundingClientRect();
                             const elRect = el.getBoundingClientRect();
-                            container.scrollBy({ top: elRect.top - containerRect.top - 100, behavior: 'smooth' });
+                            main.scrollBy({ top: elRect.top - mainRect.top - 80, behavior: 'smooth' });
                           } else {
                             el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                           }
                         }
-                      }, 150);
+                      }, 300);
                     }} 
                   />
                 ) : (

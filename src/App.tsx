@@ -1244,14 +1244,22 @@ export default function App() {
                         id={`loc-card-${loc.uid}`} 
                         className={cn("loc-card bg-white p-3 rounded-2xl border flex flex-col justify-between transition-all duration-300", isExpanded ? "col-span-full shadow-md border-gray-200" : "border-gray-100 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-200")} 
                         onClick={(e) => {
-                          if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('a')) return;
+                          const target = e.target as HTMLElement;
+                          if (target.closest('button') || target.closest('a') || target.closest('input') || target.closest('textarea') || target.closest('select')) return;
                           
                           if (loc.isInfoItem) {
                             setActiveTab('info');
                             setSearchQuery('');
                             return;
                           }
-                          setExpandedCardId(isExpanded ? null : loc.uid);
+                          
+                          if (isExpanded) {
+                            // Only close if clicking on the header area (card-header) or the card background itself
+                            if (target.closest('[data-card-body]')) return;
+                            setExpandedCardId(null);
+                          } else {
+                            setExpandedCardId(loc.uid);
+                          }
                         }}
                       >
                         <div>
@@ -1318,7 +1326,7 @@ export default function App() {
                                 exit={{ height: 0, opacity: 0 }}
                                 className="overflow-hidden"
                               >
-                                <div className="mt-4 pt-4 border-t border-gray-100/50 space-y-4">
+                                <div data-card-body className="mt-4 pt-4 border-t border-gray-100/50 space-y-4">
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {loc.f && <div><span className="font-bold text-gray-400 uppercase text-[10px] tracking-widest block mb-0.5">特 色</span> <span className="leading-snug">{loc.f}</span></div>}
                                     {loc.do && <div><span className="font-bold text-gray-400 uppercase text-[10px] tracking-widest block mb-0.5">必做必买</span> <span className="leading-snug">{loc.do}</span></div>}

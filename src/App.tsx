@@ -581,7 +581,7 @@ export default function App() {
                 TAIWAN WANDERLUST
               </h1>
               <p className="text-[10px] md:text-xs font-semibold text-[#636E72] uppercase tracking-[0.2em] md:tracking-[0.3em] leading-relaxed mt-2 text-center">
-                您的终极台湾探索指南 <span className="mx-3 opacity-30 block sm:inline my-2 sm:my-0">|</span> {time.toLocaleTimeString('en-US', { timeZone: 'Asia/Taipei', hour12: false })} LOCAL TIME
+                您的终极台湾探索指南 <span className="mx-3 opacity-30 block sm:inline my-2 sm:my-0">|</span> <span className="tabular-nums">{time.toLocaleTimeString('en-US', { timeZone: 'Asia/Taipei', hour12: false })}</span> LOCAL TIME
               </p>
             </div>
           </div>
@@ -704,7 +704,7 @@ export default function App() {
                 onClick={() => setViewMode('landing')} 
                 className="text-sm md:text-base font-black text-[#2D3436] tracking-tight cursor-pointer hover:opacity-80"
               >
-                TAIWAN WANDERLUST <span className="opacity-30 font-normal mx-1">|</span> <span className="text-[9px] md:text-[10px] text-gray-400 font-bold tracking-widest">{time.toLocaleTimeString('en-US', { timeZone: 'Asia/Taipei', hour12: false })}</span>
+                TAIWAN WANDERLUST <span className="opacity-30 font-normal mx-1">|</span> <span className="text-[9px] md:text-[10px] text-gray-400 font-bold tracking-widest tabular-nums">{time.toLocaleTimeString('en-US', { timeZone: 'Asia/Taipei', hour12: false })}</span>
               </h1>
             </div>
             

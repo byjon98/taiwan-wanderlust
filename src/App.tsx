@@ -809,49 +809,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* GLOBAL BACKGROUND MAP (Apple Maps Style) */}
-      <div className="fixed inset-0 z-0 pointer-events-auto">
-        <MapComponent 
-          currentUser={currentUser}
-          locs={showRouteOnly 
-            ? routeItems.map(r => {
-                const found = filteredLocs.find(l => l.uid === r.uid || l.n === r.n);
-                return found ? { ...r, lat: found.lat ?? r.lat, lng: found.lng ?? r.lng } : r;
-              })
-            : filteredLocs
-          } 
-          routeMode={showRouteOnly}
-          focusedLocId={focusedLocId}
-          routedUids={routeItems.map(r => r.uid ?? r.n)}
-          onAddToRoute={(loc) => {
-            const alreadyIn = routeItems.find(r => (r.uid && r.uid === loc.uid) || r.n === loc.n);
-            if (alreadyIn) {
-              setRouteItems(prev => prev.filter(r => !((r.uid && r.uid === loc.uid) || r.n === loc.n)));
-            } else {
-              setRouteItems(prev => [...prev, loc]);
-            }
-          }}
-          onLocClick={(uid) => { 
-            setShowMap(false);
-            setShowRouteOnly(false);
-            setFocusedLocId(null);
-            setExpandedCardId(uid);
-            setTimeout(() => {
-              const el = document.getElementById(`loc-card-${uid}`);
-              if (el) {
-                const main = document.getElementById('scroll-container-main');
-                if (main) {
-                  const mainRect = main.getBoundingClientRect();
-                  const elRect = el.getBoundingClientRect();
-                  main.scrollBy({ top: elRect.top - mainRect.top - 80, behavior: 'smooth' });
-                } else {
-                  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-              }
-            }, 300);
-          }} 
-        />
-      </div>
+      
 
       <main id="scroll-container-main" onScroll={handleScroll} className={cn(
         "flex-1 flex flex-col gap-4 z-40 overflow-y-auto no-scrollbar pointer-events-auto",
@@ -1225,9 +1183,46 @@ export default function App() {
                         </button>
                       </div>
                     </div>
-                  )
-                    ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
+                  ) ) : showMap ? ( <MapComponent 
+          currentUser={currentUser}
+          locs={showRouteOnly 
+            ? routeItems.map(r => {
+                const found = filteredLocs.find(l => l.uid === r.uid || l.n === r.n);
+                return found ? { ...r, lat: found.lat ?? r.lat, lng: found.lng ?? r.lng } : r;
+              })
+            : filteredLocs
+          } 
+          routeMode={showRouteOnly}
+          focusedLocId={focusedLocId}
+          routedUids={routeItems.map(r => r.uid ?? r.n)}
+          onAddToRoute={(loc) => {
+            const alreadyIn = routeItems.find(r => (r.uid && r.uid === loc.uid) || r.n === loc.n);
+            if (alreadyIn) {
+              setRouteItems(prev => prev.filter(r => !((r.uid && r.uid === loc.uid) || r.n === loc.n)));
+            } else {
+              setRouteItems(prev => [...prev, loc]);
+            }
+          }}
+          onLocClick={(uid) => { 
+            setShowMap(false);
+            setShowRouteOnly(false);
+            setFocusedLocId(null);
+            setExpandedCardId(uid);
+            setTimeout(() => {
+              const el = document.getElementById(`loc-card-${uid}`);
+              if (el) {
+                const main = document.getElementById('scroll-container-main');
+                if (main) {
+                  const mainRect = main.getBoundingClientRect();
+                  const elRect = el.getBoundingClientRect();
+                  main.scrollBy({ top: elRect.top - mainRect.top - 80, behavior: 'smooth' });
+                } else {
+                  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }
+            }, 300);
+          }} 
+        /> ) : ( <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
                     {filteredLocs.map((loc, idx) => {
                       const isCompared = compareSelected.find(c => (c.uid && c.uid === loc.uid) || (!c.uid && c.n === loc.n));
                       const isRouted = routeItems.find(r => (r.uid && r.uid === loc.uid) || (!r.uid && r.n === loc.n));
@@ -1497,6 +1492,55 @@ export default function App() {
              </div>
            ) : null}
         </section>
+        </div>
+
+        {/* RIGHT MAP PANEL */}
+        <div className={cn(
+          "hidden md:block w-full relative shrink-0 overflow-hidden rounded-3xl shadow-sm border border-gray-100",
+          activeTab === 'explore' ? "md:max-w-[400px] xl:max-w-[500px]" : "md:flex-1",
+          activeTab === 'explore' ? "min-h-[500px]" : "min-h-0",
+          "h-full"
+        )}>
+          <MapComponent 
+          currentUser={currentUser}
+          locs={showRouteOnly 
+            ? routeItems.map(r => {
+                const found = filteredLocs.find(l => l.uid === r.uid || l.n === r.n);
+                return found ? { ...r, lat: found.lat ?? r.lat, lng: found.lng ?? r.lng } : r;
+              })
+            : filteredLocs
+          } 
+          routeMode={showRouteOnly}
+          focusedLocId={focusedLocId}
+          routedUids={routeItems.map(r => r.uid ?? r.n)}
+          onAddToRoute={(loc) => {
+            const alreadyIn = routeItems.find(r => (r.uid && r.uid === loc.uid) || r.n === loc.n);
+            if (alreadyIn) {
+              setRouteItems(prev => prev.filter(r => !((r.uid && r.uid === loc.uid) || r.n === loc.n)));
+            } else {
+              setRouteItems(prev => [...prev, loc]);
+            }
+          }}
+          onLocClick={(uid) => { 
+            setShowMap(false);
+            setShowRouteOnly(false);
+            setFocusedLocId(null);
+            setExpandedCardId(uid);
+            setTimeout(() => {
+              const el = document.getElementById(`loc-card-${uid}`);
+              if (el) {
+                const main = document.getElementById('scroll-container-main');
+                if (main) {
+                  const mainRect = main.getBoundingClientRect();
+                  const elRect = el.getBoundingClientRect();
+                  main.scrollBy({ top: elRect.top - mainRect.top - 80, behavior: 'smooth' });
+                } else {
+                  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }
+            }, 300);
+          }} 
+        />
         </div>
 
         {/* Bottom Nav for Mobile */}

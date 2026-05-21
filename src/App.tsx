@@ -1121,7 +1121,14 @@ export default function App() {
                   )
                                                 ) : showMap ? (
                   <MapComponent 
-                    locs={showRouteOnly ? routeItems : filteredLocs} 
+                    locs={showRouteOnly 
+                      ? routeItems.map(r => {
+                          // Enrich with lat/lng from filteredLocs if missing
+                          const found = [...filteredLocs, ...routeItems].find(l => l.uid === r.uid || l.n === r.n);
+                          return found ? { ...r, lat: found.lat ?? r.lat, lng: found.lng ?? r.lng } : r;
+                        })
+                      : filteredLocs
+                    } 
                     routeMode={showRouteOnly}
                     focusedLocId={focusedLocId}
                     onLocClick={(uid) => { 
@@ -1132,10 +1139,18 @@ export default function App() {
                       setTimeout(() => {
                         const el = document.getElementById(`loc-card-${uid}`);
                         if (el) {
-                          const y = el.getBoundingClientRect().top + window.scrollY - 100;
-                          window.scrollTo({top: y, behavior: 'smooth'});
+                          // Try the desktop scroll container first, then fall back to main
+                          const container = document.getElementById('scroll-container-desktop') ||
+                                            document.getElementById('scroll-container-main');
+                          if (container) {
+                            const containerRect = container.getBoundingClientRect();
+                            const elRect = el.getBoundingClientRect();
+                            container.scrollBy({ top: elRect.top - containerRect.top - 100, behavior: 'smooth' });
+                          } else {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }
                         }
-                      }, 100);
+                      }, 150);
                     }} 
                   />
                 ) : (
@@ -1185,10 +1200,23 @@ export default function App() {
                             )}
                           </div>
                           
-                          {(!isExpanded && (loc.cuisine || (loc.tags && loc.tags.length > 0))) && (
+                          {!isExpanded && (
                             <div className="flex flex-wrap gap-1 mt-1 mb-1.5">
                               {loc.cuisine && <span className="text-[9px] font-bold bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200">{loc.cuisine}</span>}
-                              {loc.tags?.map(t => <span key={t} className="text-[9px] font-bold bg-gray-50 text-gray-500 px-1.5 py-0.5 rounded border border-gray-200">{t}</span>)}
+                              {loc.tags?.map((t: string) => <span key={t} className="text-[9px] font-bold bg-gray-50 text-gray-500 px-1.5 py-0.5 rounded border border-gray-200">{t}</span>)}
+                              {loc.lat && loc.lng && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowRouteOnly(false);
+                                    setFocusedLocId(loc.uid);
+                                    setShowMap(true);
+                                  }}
+                                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 transition-colors"
+                                >
+                                  <MapPin className="w-2.5 h-2.5" /> 地图
+                                </button>
+                              )}
                             </div>
                           )}
 

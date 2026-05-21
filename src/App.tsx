@@ -1490,54 +1490,6 @@ export default function App() {
         </section>
         </div>
 
-        {/* RIGHT MAP PANEL */}
-        <div className={cn(
-          "hidden md:block w-full relative shrink-0 overflow-hidden rounded-3xl shadow-sm border border-gray-100",
-          activeTab === 'explore' ? "md:max-w-[400px] xl:max-w-[500px]" : "md:flex-1",
-          activeTab === 'explore' ? "min-h-[500px]" : "min-h-0",
-          "h-full"
-        )}>
-          <MapComponent 
-          currentUser={currentUser}
-          locs={showRouteOnly 
-            ? routeItems.map(r => {
-                const found = filteredLocs.find(l => l.uid === r.uid || l.n === r.n);
-                return found ? { ...r, lat: found.lat ?? r.lat, lng: found.lng ?? r.lng } : r;
-              })
-            : filteredLocs
-          } 
-          routeMode={showRouteOnly}
-          focusedLocId={focusedLocId}
-          routedUids={routeItems.map(r => r.uid ?? r.n)}
-          onAddToRoute={(loc) => {
-            const alreadyIn = routeItems.find(r => (r.uid && r.uid === loc.uid) || r.n === loc.n);
-            if (alreadyIn) {
-              setRouteItems(prev => prev.filter(r => !((r.uid && r.uid === loc.uid) || r.n === loc.n)));
-            } else {
-              setRouteItems(prev => [...prev, loc]);
-            }
-          }}
-          onLocClick={(uid) => { 
-            setShowMap(false);
-            setShowRouteOnly(false);
-            setFocusedLocId(null);
-            setExpandedCardId(uid);
-            setTimeout(() => {
-              const el = document.getElementById(`loc-card-${uid}`);
-              if (el) {
-                const main = document.getElementById('scroll-container-main');
-                if (main) {
-                  const mainRect = main.getBoundingClientRect();
-                  const elRect = el.getBoundingClientRect();
-                  main.scrollBy({ top: elRect.top - mainRect.top - 80, behavior: 'smooth' });
-                } else {
-                  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-              }
-            }, 300);
-          }} 
-        />
-        </div>
 
         {/* Bottom Nav for Mobile */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex items-center justify-around h-[calc(4rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] px-4 z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">

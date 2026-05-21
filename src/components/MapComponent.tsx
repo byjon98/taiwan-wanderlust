@@ -100,13 +100,14 @@ function LivePlayersMarker({ currentUser }: { currentUser: string }) {
         const isJon = playerName === 'Jon';
         let emoji = isJon ? '🧑🏻' : '👩🏻';
         
+        let bgColor = isOffline ? 'bg-gray-400' : (isJon ? 'bg-blue-500' : 'bg-pink-500');
+        let shadowColor = isOffline ? 'rgba(156,163,175,0.8)' : (isJon ? 'rgba(59,130,246,0.8)' : 'rgba(236,72,153,0.8)');
+
         const userIcon = L.divIcon({
           className: 'custom-user-icon',
-          html: `<div style="font-size: 32px; line-height: 1; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4)); ${isOffline ? 'opacity: 0.6; filter: grayscale(100%);' : ''}">
-                   <div class="${isOffline ? '' : 'animate-bounce'}">${emoji}</div>
-                 </div>`,
-          iconSize: [32, 32],
-          iconAnchor: [16, 32]
+          html: `<div class="w-4 h-4 ${bgColor} border-2 border-white rounded-full shadow-[0_0_8px_${shadowColor}]"></div>`,
+          iconSize: [16, 16],
+          iconAnchor: [8, 8]
         });
 
         // 如果是当前使用者，将图层提至最上层，避免重叠时被覆盖

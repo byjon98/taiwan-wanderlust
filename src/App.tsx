@@ -147,7 +147,8 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: "application/json" }
         })
       });
       
@@ -165,10 +166,12 @@ export default function App() {
       toast.success('AI 数据生成成功！请确认后保存。');
     } catch (e: any) {
       console.error(e);
-      toast.error('AI 请求失败: ' + e.message);
-      if (e.message.includes('API Error:')) {
+      toast.error('AI 请求失败: ' + (e.message.includes('undefined') ? 'AI 未返回数据，可能命中安全策略' : e.message));
+      if (e.message.includes('API Error 400') || e.message.includes('API Error 401') || e.message.includes('API Error 403')) {
         localStorage.removeItem('GEMINI_API_KEY');
-        toast.error('API Key 似乎无效，已自动清除。');
+        toast.error('API Key 似乎无效，已自动清除，请重新输入。');
+      } else if (e.message.includes('API Error 429')) {
+        toast.error('请求太频繁 (Rate Limit)，请稍后再试。');
       }
       // Fallback to manual clipboard
       navigator.clipboard.writeText(prompt).then(() => {
@@ -228,12 +231,13 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: "application/json" }
         })
       });
       
       if (!response.ok) {
-        throw new Error(`API Error: ${response.statusText}`);
+        throw new Error(`API Error ${response.status}: ${response.statusText}`);
       }
       
       const data = await response.json();
@@ -258,10 +262,12 @@ export default function App() {
       }
     } catch (e: any) {
       console.error(e);
-      toast.error('AI 请求失败: ' + e.message);
-      if (e.message.includes('API Error:')) {
+      toast.error('AI 请求失败: ' + (e.message.includes('undefined') ? 'AI 未返回数据，可能命中安全策略' : e.message));
+      if (e.message.includes('API Error 400') || e.message.includes('API Error 401') || e.message.includes('API Error 403')) {
         localStorage.removeItem('GEMINI_API_KEY');
-        toast.error('API Key 似乎无效，已自动清除。');
+        toast.error('API Key 似乎无效，已自动清除，请重新输入。');
+      } else if (e.message.includes('API Error 429')) {
+        toast.error('请求太频繁 (Rate Limit)，请稍后再试。');
       }
     } finally {
       setIsDiscoveringNearby(false);

@@ -164,11 +164,18 @@ export default function App() {
       setAddStoreStep(2);
       toast.success('AI 数据生成成功！请确认后保存。');
     } catch (e: any) {
+      console.error(e);
       toast.error('AI 请求失败: ' + e.message);
+      if (e.message.includes('API Error:')) {
+        localStorage.removeItem('GEMINI_API_KEY');
+        toast.error('API Key 似乎无效，已自动清除。');
+      }
       // Fallback to manual clipboard
       navigator.clipboard.writeText(prompt).then(() => {
         toast.info('已回退至手动模式：Prompt 已复制，请前往 AI 粘贴');
         setAddStoreStep(2);
+      }).catch(() => {
+        toast.error('无法自动复制 Prompt，请重试');
       });
     } finally {
       setIsAiLoading(false);

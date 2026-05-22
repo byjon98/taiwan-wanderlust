@@ -49,7 +49,7 @@ const flattenedInfoLocs = [...souvenirModules, ...groceryModules].flatMap(mod =>
   }))
 );
 
-import { getStandardPrompt, getHardcorePrompt } from './utils/prompts';
+import { getStandardPrompt, getHardcorePrompt, getNearbyExplorationPrompt } from './utils/prompts';
 
 export default function App() {
   const {
@@ -183,116 +183,24 @@ export default function App() {
       setIsAiLoading(false);
     }
   };
-
-  const [isDiscoveringNearby, setIsDiscoveringNearby] = useState(false);
-
-  const handleDiscoverNearbyAI = async () => {
-    if (!nearbyFilter) {
-      toast.error('请先使用定位功能');
-      return;
+  const handleCopyExplorePrompt = () => {
+    const lat = nearbyFilter?.lat;
+    const lng = nearbyFilter?.lng;
+    const dist = nearbyFilter?.dist;
+    const searchContext = searchQuery;
+    
+    let locationName = '';
+    if (activeRegionId !== 'all') {
+      locationName = activeRegion?.name || '';
+      if (activeZone) locationName += ` ${activeZone}`;
     }
 
-    let apiKey = localStorage.getItem('GEMINI_API_KEY');
-    if (!apiKey) {
-      apiKey = window.prompt("请输入您的 Gemini API Key 以使用 AI 探索功能（仅保存在本设备）：");
-      if (!apiKey) {
-        toast.error('需要 API Key 才能自动获取');
-        return;
-      }
-      localStorage.setItem('GEMINI_API_KEY', apiKey.trim());
-    }
-
-    setIsDiscoveringNearby(true);
-    toast.info('AI 正在扫描附近隐藏好店，请稍候...');
-
-    const prompt = `作为专业的台湾旅游达人，用户当前的 GPS 坐标为纬度 ${nearbyFilter.lat}，经度 ${nearbyFilter.lng}。请根据你的知识库，推荐 3 家真实存在于这个位置 ${nearbyFilter.dist >= 1 ? nearbyFilter.dist + '公里' : (nearbyFilter.dist * 1000) + '米'} 范围内的优质店面或景点（最好是隐藏版美食，绝对不要推荐已经太泛滥的连锁店）。请严格按照以下 JSON 数组格式输出，不要输出任何其他文本或 markdown 标记：
-[
-  {
-    "n": "店名",
-    "f": "特色简述",
-    "do": "必做体验（一句话）",
-    "eat": "必吃/必买推荐（逗号分隔，如果没有可留空）",
-    "w": "避雷指南（如果没有可留空）",
-    "r": "网络评价摘要",
-    "tips": "实用提示",
-    "price": "cheap或mid或exp",
-    "zone": "所属区域",
-    "cuisine": "菜系/类型",
-    "hours": "营业时间",
-    "lat": 具体纬度数值,
-    "lng": 具体经度数值,
-    "tags": ["AI挖掘"]
-  }
-]`;
-
-    try {
-      const { GoogleGenAI } = await import('@google/genai');
-      const ai = new GoogleGenAI({ apiKey: apiKey });
-      const response = await ai.models.generateContent({
-        model: aiModel,
-        contents: prompt
-      });
-      
-      let rawJson = response.text;
-      const jsonMatch = rawJson.match(/\[[\s\S]*\]/);
-      if (jsonMatch) rawJson = jsonMatch[0];
-      
-      const newItems = JSON.parse(rawJson);
-      
-      if (Array.isArray(newItems)) {
-        const itemsWithUid = newItems.map((item: any) => ({
-          ...item,
-          uid: 'custom_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-          s: 5,
-          t: item.cuisine ? '餐厅' : '景点'
-        }));
-        
-        setCustomStores(prev => [...prev, ...itemsWithUid]);
-        toast.success(`成功挖掘到 ${itemsWithUid.length} 家附近好店！`);
-      } else {
-        throw new Error("AI 返回格式错误");
-      }
-    } catch (e: any) {
-      console.error(e);
-      toast.error('AI 请求失败: ' + (e.message.includes('undefined') ? 'AI 未返回数据，可能命中安全策略' : e.message));
-      if (e.message.includes('API Error 400') || e.message.includes('API Error 401') || e.message.includes('API Error 403')) {
-        localStorage.removeItem('GEMINI_API_KEY');
-        toast.error('API Key 似乎无效，已自动清除，请重新输入。');
-      } else if (e.message.includes('API Error 429')) {
-        toast.error('请求太频繁 (Rate Limit)，请稍后再试。');
-      }
-    } finally {
-      setIsDiscoveringNearby(false);
-    }
-  };
-
-  const handleCopyPromptOnly = () => {
-    const storeTarget = searchQuery || "值得推荐的店面";
-    const prompt = `作为专业的台湾旅游达人，请根据你的知识库为我介绍这家店(或相关推荐)："${storeTarget}"。
-了解清楚它的特色、评价和营业时间后，请严格按照以下 JSON 格式输出结果，不要输出任何其他多余的文字或 markdown 标记（例如不要输出 \`\`\`json）：
-{
-  "n": "店名",
-  "f": "店面特色、背景与必买简述",
-  "do": "必做体验（一句话）",
-  "eat": "必吃/必买推荐（逗号分隔）",
-  "w": "避雷指南（如果有）",
-  "r": "网络评价摘要",
-  "tips": "实用提示（一句话）",
-  "price": "消费预估",
-  "minSpend": "低消限制",
-  "zone": "所属区域（例如台北信义区、台西、或者是你认为最合适的区域名）",
-  "cuisine": "菜系/类型",
-  "hours": "营业时间（如 10:00 - 22:00）",
-  "lat": "该店的精准纬度(数字，例如 25.033。不要回答不知道或0，尽全力根据区位估算)",
-  "lng": "该店的精准经度(数字，例如 121.564。不要回答不知道或0，尽全力根据区位估算)"
-}`;
-
+    const prompt = getNearbyExplorationPrompt(lat, lng, dist, locationName, searchContext);
     navigator.clipboard.writeText(prompt).then(() => {
-      toast.success('Prompt 已复制！您可以去任何 AI 工具粘贴询问。');
-    }).catch(() => {
-      toast.error('自动复制失败，请手动尝试。');
-    });
+        toast.success('周边探索 Prompt 已复制，请前往 AI 粘贴');
+    }).catch(() => toast.error('复制失败，请重试'));
   };
+
 
   const saveCustomStore = () => {
     try {
@@ -1458,12 +1366,11 @@ export default function App() {
                   
                   <div className="flex flex-col sm:flex-row gap-2">
                     <button 
-                      onClick={handleDiscoverNearbyAI}
-                      disabled={isDiscoveringNearby}
-                      className="flex-1 flex justify-center items-center gap-1.5 px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-bold rounded-xl shadow-sm hover:shadow active:scale-95 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                      onClick={handleCopyExplorePrompt}
+                      className="flex-1 flex justify-center items-center gap-1.5 px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-bold rounded-xl shadow-sm hover:shadow active:scale-95 transition-all"
                     >
-                      <Sparkles className={cn("w-4 h-4", isDiscoveringNearby && "animate-spin")} />
-                      {isDiscoveringNearby ? "AI 正在挖掘..." : "✨ 让 AI 挖掘真实好店"}
+                      <Sparkles className="w-4 h-4" />
+                      ✨ 让 AI 挖掘真实好店
                     </button>
                     
                     <a 
@@ -1520,7 +1427,7 @@ export default function App() {
                       <p className="text-sm text-gray-500 mb-6">请尝试调整选项或重置过滤条件。</p>
                       <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
                         <button 
-                          onClick={handleCopyPromptOnly}
+                          onClick={handleCopyExplorePrompt}
                           className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:scale-105 transition-transform"
                         >
                           <span className="text-xl">✨</span>

@@ -679,7 +679,7 @@ export default function App() {
           <form 
             onSubmit={(e) => {
               e.preventDefault();
-              if (pinInput === '0523') {
+              if (pinInput === '1968') {
                 setHasVerifiedPin(true);
                 toast.success('验证成功！欢迎回来。');
               } else {

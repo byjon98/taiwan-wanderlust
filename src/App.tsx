@@ -129,14 +129,14 @@ export default function App() {
   "lng": "该店的精准经度(数字，例如 121.564。不要回答不知道或0，尽全力根据区位估算)"
 }`;
 
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('GEMINI_API_KEY') || "AIzaSyAUo0vq-c9j7bkzTOYzr3RlEYrSRFbq3Uo";
+    let apiKey = localStorage.getItem('GEMINI_API_KEY');
     if (!apiKey) {
-      const key = window.prompt("请输入您的 Gemini API Key (仅保存在本地)：");
-      if (!key) {
+      apiKey = window.prompt("请输入您的 Gemini API Key（仅保存在本设备）：");
+      if (!apiKey) {
         toast.error('需要 API Key 才能自动获取');
         return;
       }
-      localStorage.setItem('GEMINI_API_KEY', key);
+      localStorage.setItem('GEMINI_API_KEY', apiKey);
     }
 
     setIsAiLoading(true);
@@ -253,8 +253,8 @@ export default function App() {
   const [nearbyFilter, setNearbyFilter] = useState<{lat: number, lng: number, dist: number} | null>(null);
   
   useEffect(() => {
-    // If user changes search query, clear the nearby filter
-    if (nearbyFilter && !searchQuery.includes('距离约')) {
+    // If user explicitly searches, clear the nearby filter
+    if (searchQuery && nearbyFilter) {
       setNearbyFilter(null);
     }
   }, [searchQuery]);
@@ -638,7 +638,7 @@ export default function App() {
       return;
     }
     
-    const dist = parseInt(distStr); // '1km' -> 1
+    const dist = distStr.endsWith('km') ? parseFloat(distStr) : parseFloat(distStr) / 1000;
     
     toast.info("正在获取位置...");
     navigator.geolocation.getCurrentPosition(
@@ -646,15 +646,12 @@ export default function App() {
         const { latitude, longitude } = position.coords;
         setActiveRegionId('all');
         setNearbyFilter({ lat: latitude, lng: longitude, dist });
-        setSearchQuery(`距离约 ${distStr}以内`);
         setActiveTab('explore');
         setActiveZone(null);
         setShowLocateModal(false);
       },
       (error) => {
         toast.error("无法获取您的当前位置，请检查定位权限。");
-        setActiveRegionId('taipei');
-        setSearchQuery(`距离约 ${distStr}`);
         setActiveTab('explore');
         setActiveZone(null);
         setShowLocateModal(false);
@@ -1274,6 +1271,12 @@ export default function App() {
                     <h2 className="text-xl md:text-3xl font-black text-[#2D3436] tracking-tight">{searchQuery ? 'Search Results' : (activeRegionId === 'all' ? '全部区域' : activeRegion?.name)}</h2>
                     {!searchQuery && activeRegionId !== 'all' && <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest border border-gray-200 rounded px-1.5 py-0.5">{activeRegion?.day}</span>}
                   </div>
+                  {nearbyFilter && (
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 border border-indigo-100 rounded-full text-indigo-700 text-xs font-bold mt-2 sm:mt-0 shadow-sm animate-in fade-in">
+                      <span>📍 正在显示附近 {nearbyFilter.dist >= 1 ? `${nearbyFilter.dist}km` : `${nearbyFilter.dist * 1000}m`} 内的地点</span>
+                      <button onClick={() => setNearbyFilter(null)} className="hover:bg-indigo-200 p-0.5 rounded-full transition-colors"><X className="w-3 h-3" /></button>
+                    </div>
+                  )}
                   {!searchQuery && (
                     <div className="flex items-center gap-3">
                       <span className="hidden sm:block text-[9px] font-black uppercase tracking-[0.2em] text-gray-300">Curated Destinations</span>
@@ -1881,7 +1884,14 @@ export default function App() {
                   {isAiLoading ? 'AI 正在思考...' : '向 Gemini 获取资料'}
                 </button>
                 <p className="text-[10px] text-gray-400 text-center mt-2 leading-relaxed">
-                  需要填入您的 Gemini API Key。<br/>若未提供，将回退至手动复制 Prompt 模式。
+                  需要填入您的 Gemini API Key。
+                  <button 
+                    onClick={() => { localStorage.removeItem('GEMINI_API_KEY'); toast.success('API Key 已清除，下次将重新询问'); }}
+                    className="text-indigo-400 hover:text-indigo-600 underline ml-1"
+                  >
+                    (重设 API Key)
+                  </button>
+                  <br/>若未提供，将回退至手动复制 Prompt 模式。
                 </p>
               </div>
             )}

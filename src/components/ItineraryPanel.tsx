@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { regions } from '../data';
 import { ToastContainer, toast } from './Toast';
+import { getStandardPrompt, getHardcorePrompt } from '../utils/prompts';
 
 // Helper to find a location by name across all regions
 const findLocationByName = (name: string) => {
@@ -762,17 +763,30 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
                                               <span className="text-[10px] bg-white border border-gray-100 px-2 py-1 rounded-lg text-gray-500">确认订单</span>
                                               <span className="text-[10px] bg-white border border-gray-100 px-2 py-1 rounded-lg text-gray-500">酒店入住</span>
                                            </div>
-                                           <button 
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              const prompt = `我正在寻找关于 "${item.name}" 的详细旅行资讯。请帮我搜索并在九大模块中详细说明。`;
-                                              navigator.clipboard.writeText(prompt);
-                                              toast.success('Prompt 已复制！');
-                                            }}
-                                            className="mt-4 w-full py-2 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-xl text-[10px] font-bold hover:bg-indigo-600 hover:text-white transition-colors"
-                                           >
-                                             ✨ 去 AI 获取此节点详情
-                                           </button>
+                                           <div className="flex gap-2 mt-4">
+                                             <button 
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                const prompt = getStandardPrompt(item.name);
+                                                navigator.clipboard.writeText(prompt);
+                                                toast.success('常规版 Prompt 已复制！');
+                                              }}
+                                              className="flex-1 py-2 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-xl text-[10px] font-bold hover:bg-indigo-600 hover:text-white transition-colors flex items-center justify-center gap-1 shadow-sm"
+                                             >
+                                               ✨ 常规详情
+                                             </button>
+                                             <button 
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                const prompt = getHardcorePrompt(item.name);
+                                                navigator.clipboard.writeText(prompt);
+                                                toast.success('尽调版 Prompt 已复制！');
+                                              }}
+                                              className="flex-1 py-2 bg-indigo-500 border border-indigo-600 text-white rounded-xl text-[10px] font-bold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-1 shadow-sm"
+                                             >
+                                               🔥 硬核尽调
+                                             </button>
+                                           </div>
                                         </div>
                                       )}
                                     </div>

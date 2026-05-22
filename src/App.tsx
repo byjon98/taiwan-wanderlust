@@ -107,6 +107,7 @@ export default function App() {
   const [newStoreZone, setNewStoreZone] = useState('');
   const [newStoreJson, setNewStoreJson] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiModel, setAiModel] = useState(localStorage.getItem('PREFERRED_AI_MODEL') || 'gemini-2.5-flash');
 
   const handleAddStoreAI = async () => {
     const storeTarget = newStoreName || searchQuery || "值得推荐的店面";
@@ -146,7 +147,7 @@ export default function App() {
       const { GoogleGenAI } = await import('@google/genai');
       const ai = new GoogleGenAI({ apiKey: apiKey });
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: aiModel,
         contents: prompt
       });
       
@@ -223,7 +224,7 @@ export default function App() {
       const { GoogleGenAI } = await import('@google/genai');
       const ai = new GoogleGenAI({ apiKey: apiKey });
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: aiModel,
         contents: prompt
       });
       
@@ -2005,6 +2006,27 @@ export default function App() {
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1">所属区域 (可选)</label>
                   <input type="text" value={newStoreZone} onChange={e => setNewStoreZone(e.target.value)} placeholder="例如：信义区 (留空则使用 AI 判断)" className="w-full p-3 border-2 border-gray-100 rounded-xl bg-gray-50 focus:bg-white focus:border-indigo-300 outline-none transition-all font-medium text-sm" />
+                </div>
+                
+                <div className="flex items-center justify-between mb-1 mt-3">
+                  <label className="text-xs font-bold text-gray-500">选择 Gemini 模型</label>
+                  <select 
+                    value={aiModel} 
+                    onChange={e => {
+                      setAiModel(e.target.value);
+                      localStorage.setItem('PREFERRED_AI_MODEL', e.target.value);
+                    }}
+                    className="text-xs p-1.5 px-2 border border-gray-200 rounded-lg bg-gray-50 text-indigo-600 font-bold focus:outline-none"
+                  >
+                    <option value="gemini-1.5-flash">1.5 Flash (最稳/配额多)</option>
+                    <option value="gemini-1.5-pro">1.5 Pro</option>
+                    <option value="gemini-2.0-flash">2.0 Flash</option>
+                    <option value="gemini-2.5-flash">2.5 Flash</option>
+                    <option value="gemini-3.0-flash">3.0 Flash</option>
+                    <option value="gemini-3.1-flash">3.1 Flash</option>
+                    <option value="gemini-3.5-flash">3.5 Flash</option>
+                    <option value="gemini-pro">1.0 Pro</option>
+                  </select>
                 </div>
                 <button 
                   onClick={handleAddStoreAI}

@@ -136,7 +136,7 @@ export default function App() {
         toast.error('需要 API Key 才能自动获取');
         return;
       }
-      localStorage.setItem('GEMINI_API_KEY', apiKey);
+      localStorage.setItem('GEMINI_API_KEY', apiKey.trim());
     }
 
     setIsAiLoading(true);
@@ -199,7 +199,7 @@ export default function App() {
         toast.error('需要 API Key 才能自动获取');
         return;
       }
-      localStorage.setItem('GEMINI_API_KEY', apiKey);
+      localStorage.setItem('GEMINI_API_KEY', apiKey.trim());
     }
 
     setIsDiscoveringNearby(true);

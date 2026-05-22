@@ -2018,14 +2018,9 @@ export default function App() {
                     }}
                     className="text-xs p-1.5 px-2 border border-gray-200 rounded-lg bg-gray-50 text-indigo-600 font-bold focus:outline-none"
                   >
-                    <option value="gemini-1.5-flash">1.5 Flash (最稳/配额多)</option>
-                    <option value="gemini-1.5-pro">1.5 Pro</option>
                     <option value="gemini-2.0-flash">2.0 Flash</option>
                     <option value="gemini-2.5-flash">2.5 Flash</option>
-                    <option value="gemini-3.0-flash">3.0 Flash</option>
-                    <option value="gemini-3.1-flash">3.1 Flash</option>
                     <option value="gemini-3.5-flash">3.5 Flash</option>
-                    <option value="gemini-pro">1.0 Pro</option>
                   </select>
                 </div>
                 <button 

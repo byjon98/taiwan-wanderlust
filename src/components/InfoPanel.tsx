@@ -108,6 +108,62 @@ export default function InfoPanel() {
     }))
   }));
 
+  // Migration: merge any new default modules/items that are missing from Firestore data
+  // This runs once after data is loaded and adds new items without overwriting user's changes
+  useEffect(() => {
+    if (!souvenirDataRaw || souvenirDataRaw.length === 0) return;
+    let needsUpdate = false;
+    const merged = INITIAL_SOUVENIRS.map((defaultModule) => {
+      const existing = souvenirDataRaw.find((m: any) => m.id === defaultModule.id);
+      if (!existing) { needsUpdate = true; return defaultModule; }
+      // Merge any new items that don't exist yet (matched by name)
+      const newItems = defaultModule.items.filter(
+        (di) => !existing.items.some((ei: any) => ei.n === di.n)
+      );
+      if (newItems.length > 0) { needsUpdate = true; }
+      return { ...existing, items: [...existing.items, ...newItems] };
+    });
+    // Also keep any user-added modules not in defaults
+    const extraModules = souvenirDataRaw.filter((m: any) => !INITIAL_SOUVENIRS.find(d => d.id === m.id));
+    if (needsUpdate) setSouvenirData([...merged, ...extraModules]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [souvenirDataRaw.length > 0 ? souvenirDataRaw[0]?.id : null]);
+
+  useEffect(() => {
+    if (!groceryDataRaw || groceryDataRaw.length === 0) return;
+    let needsUpdate = false;
+    const merged = INITIAL_GROCERIES.map((defaultModule) => {
+      const existing = groceryDataRaw.find((m: any) => m.id === defaultModule.id);
+      if (!existing) { needsUpdate = true; return defaultModule; }
+      const newItems = defaultModule.items.filter(
+        (di) => !existing.items.some((ei: any) => ei.n === di.n)
+      );
+      if (newItems.length > 0) { needsUpdate = true; }
+      return { ...existing, items: [...existing.items, ...newItems] };
+    });
+    const extraModules = groceryDataRaw.filter((m: any) => !INITIAL_GROCERIES.find((d: any) => d.id === m.id));
+    if (needsUpdate) setGroceryData([...merged, ...extraModules]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groceryDataRaw.length > 0 ? groceryDataRaw[0]?.id : null]);
+
+  // Packing list migration: merge new default items into existing packing list
+  useEffect(() => {
+    if (!userPackingList || userPackingList.length === 0) return;
+    let needsUpdate = false;
+    const merged = INITIAL_PACKING_LIST.map((defaultCat) => {
+      const existing = userPackingList.find((c: any) => c.title === defaultCat.title);
+      if (!existing) { needsUpdate = true; return defaultCat; }
+      const newItems = defaultCat.items.filter(
+        (di) => !existing.items.some((ei: any) => ei.text === di.text)
+      );
+      if (newItems.length > 0) { needsUpdate = true; }
+      return { ...existing, items: [...existing.items, ...newItems] };
+    });
+    const extraCats = userPackingList.filter((c: any) => !INITIAL_PACKING_LIST.find((d: any) => d.title === c.title));
+    if (needsUpdate) setUserPackingList([...merged, ...extraCats]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userPackingList.length > 0 ? userPackingList[0]?.title : null]);
+
   // Souvenir History Helpers
   const updateSouvenirsWithHistory = (newList: InfoModule[]) => {
     setSouvenirHistory(prev => [...prev.slice(-49), souvenirData]);

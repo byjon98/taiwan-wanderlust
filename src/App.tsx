@@ -46,6 +46,9 @@ const flattenedInfoLocs = [...souvenirModules, ...groceryModules].flatMap(mod =>
     h: [],
     cl: '',
     how: mod.name
+  }))
+);
+
 import { getStandardPrompt, getHardcorePrompt } from './utils/prompts';
 
 export default function App() {

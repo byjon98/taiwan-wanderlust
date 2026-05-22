@@ -268,6 +268,34 @@ export default function App() {
     }
   };
 
+  const handleCopyPromptOnly = () => {
+    const storeTarget = searchQuery || "值得推荐的店面";
+    const prompt = `作为专业的台湾旅游达人，请根据你的知识库为我介绍这家店(或相关推荐)："${storeTarget}"。
+了解清楚它的特色、评价和营业时间后，请严格按照以下 JSON 格式输出结果，不要输出任何其他多余的文字或 markdown 标记（例如不要输出 \`\`\`json）：
+{
+  "n": "店名",
+  "f": "店面特色、背景与必买简述",
+  "do": "必做体验（一句话）",
+  "eat": "必吃/必买推荐（逗号分隔）",
+  "w": "避雷指南（如果有）",
+  "r": "网络评价摘要",
+  "tips": "实用提示（一句话）",
+  "price": "消费预估",
+  "minSpend": "低消限制",
+  "zone": "所属区域（例如台北信义区、台西、或者是你认为最合适的区域名）",
+  "cuisine": "菜系/类型",
+  "hours": "营业时间（如 10:00 - 22:00）",
+  "lat": "该店的精准纬度(数字，例如 25.033。不要回答不知道或0，尽全力根据区位估算)",
+  "lng": "该店的精准经度(数字，例如 121.564。不要回答不知道或0，尽全力根据区位估算)"
+}`;
+
+    navigator.clipboard.writeText(prompt).then(() => {
+      toast.success('Prompt 已复制！您可以去任何 AI 工具粘贴询问。');
+    }).catch(() => {
+      toast.error('自动复制失败，请手动尝试。');
+    });
+  };
+
   const saveCustomStore = () => {
     try {
       let rawJson = newStoreJson;
@@ -1478,7 +1506,7 @@ export default function App() {
                       <p className="text-sm text-gray-500 mb-6">请尝试调整选项或重置过滤条件。</p>
                       <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
                         <button 
-                          onClick={handleAddStoreAI}
+                          onClick={handleCopyPromptOnly}
                           className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:scale-105 transition-transform"
                         >
                           <span className="text-xl">✨</span>

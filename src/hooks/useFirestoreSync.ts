@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
-export function useFirestoreSync<T>(docId: string, localStorageKey: string, defaultValue: T): [T, (val: T | ((prev: T) => T)) => void] {
+export function useFirestoreSync<T>(docId: string, localStorageKey: string, defaultValue: T): [T, (val: T | ((prev: T) => T)) => void, boolean] {
+  const [isLoaded, setIsLoaded] = useState<boolean>(() => !!localStorage.getItem(localStorageKey));
+  
   // Initialize from local storage for instant offline loading
   const [state, setState] = useState<T>(() => {
     try {
@@ -41,6 +43,7 @@ export function useFirestoreSync<T>(docId: string, localStorageKey: string, defa
         
         setState(cloudData);
         localStorage.setItem(localStorageKey, JSON.stringify(cloudData));
+        setIsLoaded(true);
       } else {
         // Migration: If cloud is empty, seed it with our local data
         const local = localStorage.getItem(localStorageKey);
@@ -55,6 +58,7 @@ export function useFirestoreSync<T>(docId: string, localStorageKey: string, defa
         
         // Save native object to Firestore
         setDoc(docRef, { data: dataToSeed, updatedAt: Date.now() }, { merge: true });
+        setIsLoaded(true);
       }
     }, (error) => {
       console.error(`Firestore sync error for ${docId}:`, error);
@@ -80,5 +84,5 @@ export function useFirestoreSync<T>(docId: string, localStorageKey: string, defa
     });
   }, [docId, localStorageKey]);
 
-  return [state, setSyncState];
+  return [state, setSyncState, isLoaded];
 }

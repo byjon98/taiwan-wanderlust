@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
 import L from 'leaflet';
+import { ToastContainer, toast } from './Toast';
 import 'leaflet/dist/leaflet.css';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -25,11 +26,15 @@ function MapBounds({ locs, enabled }: { locs: Store[], enabled: boolean }) {
 
   useEffect(() => {
     if (!enabled) return;
-    const validLocs = locs.filter(l => l.lat && l.lng);
+    const validLocs = locs.filter(l => {
+      const lat = Number(l.lat);
+      const lng = Number(l.lng);
+      return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
+    });
     const hash = validLocs.map(l => l.uid ?? l.n).join(',');
     if (validLocs.length > 0 && hash !== prevHashRef.current) {
       prevHashRef.current = hash;
-      const bounds = L.latLngBounds(validLocs.map(l => [l.lat, l.lng]));
+      const bounds = L.latLngBounds(validLocs.map(l => [Number(l.lat), Number(l.lng)]));
       map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15, animate: false });
     }
   }, [locs, map, enabled]);
@@ -49,12 +54,16 @@ function MapFocus({ focusedLocId, locs, markerRefs }: {
     if (!focusedLocId || focusedLocId === prevFocusRef.current) return;
     prevFocusRef.current = focusedLocId;
     const loc = locs.find(l => l.uid === focusedLocId);
-    if (loc && loc.lat && loc.lng) {
-      map.flyTo([loc.lat, loc.lng], 16, { duration: 1.2, animate: true });
-      setTimeout(() => {
-        const marker = markerRefs.current[focusedLocId];
-        if (marker) marker.openPopup();
-      }, 1300);
+    if (loc) {
+      const lat = Number(loc.lat);
+      const lng = Number(loc.lng);
+      if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+        map.flyTo([lat, lng], 16, { duration: 1.2, animate: true });
+        setTimeout(() => {
+          const marker = markerRefs.current[focusedLocId];
+          if (marker) marker.openPopup();
+        }, 1300);
+      }
     }
   }, [focusedLocId]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
@@ -63,6 +72,7 @@ function MapFocus({ focusedLocId, locs, markerRefs }: {
 // ─── Real-time Multiplayer Location Tracking ───
 function LivePlayersMarker({ currentUser }: { currentUser: string }) {
   const [players, setPlayers] = useState<Record<string, LiveLocation>>({});
+  const lastWriteRef = useRef<number>(0);
 
   // 1. Listen to Firebase for all players' locations
   useEffect(() => {
@@ -74,15 +84,19 @@ function LivePlayersMarker({ currentUser }: { currentUser: string }) {
     return () => unsub();
   }, []);
 
-  // 2. Watch own position and push to Firebase
+  // 2. Watch own position and push to Firebase (Throttled to once every 30 seconds for battery protection)
   useEffect(() => {
     if (navigator.geolocation) {
       const watchId = navigator.geolocation.watchPosition(
         (pos) => {
-          const locData = { lat: pos.coords.latitude, lng: pos.coords.longitude, timestamp: Date.now() };
-          setDoc(doc(db, 'trip', 'live_locations'), {
-            [currentUser]: locData
-          }, { merge: true }).catch(err => console.error("Live loc update failed", err));
+          const now = Date.now();
+          if (now - lastWriteRef.current >= 30000) {
+            lastWriteRef.current = now;
+            const locData = { lat: pos.coords.latitude, lng: pos.coords.longitude, timestamp: now };
+            setDoc(doc(db, 'trip', 'live_locations'), {
+              [currentUser]: locData
+            }, { merge: true }).catch(err => console.error("Live loc update failed", err));
+          }
         },
         (err) => console.error("无法获取当前位置:", err),
         { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
@@ -97,6 +111,10 @@ function LivePlayersMarker({ currentUser }: { currentUser: string }) {
   return (
     <>
       {Object.entries(players).map(([playerName, data]) => {
+        const lat = Number(data?.lat);
+        const lng = Number(data?.lng);
+        if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) return null;
+
         const isOffline = (now - data.timestamp) > 15 * 60 * 1000; // 15 mins offline
         const isJon = playerName === 'Jon';
         let emoji = isJon ? '🧑🏻' : '👩🏻';
@@ -115,7 +133,7 @@ function LivePlayersMarker({ currentUser }: { currentUser: string }) {
         const zIndexOffset = playerName === currentUser ? 1000 : 0;
 
         return (
-          <Marker key={playerName} position={[data.lat, data.lng]} icon={userIcon} zIndexOffset={zIndexOffset}>
+          <Marker key={playerName} position={[lat, lng]} icon={userIcon} zIndexOffset={zIndexOffset}>
             <Popup>
               <div className="font-bold text-xs text-center tracking-wide text-gray-700">
                 {emoji} {playerName} {isOffline ? '(已离线)' : '(目前位置)'}
@@ -165,7 +183,7 @@ function LocateMeButton({ currentUser }: { currentUser: string }) {
               if (error.code === 1) msg += "请检查您的浏览器/设备是否允许了网页的定位权限。";
               else if (error.code === 2) msg += "由于室内无GPS讯号或网络问题，当前位置不可用。";
               else msg += "定位超时或发生未知错误。";
-              alert(msg);
+              toast.error(msg);
             },
             { enableHighAccuracy: true, timeout: 5000 }
           );
@@ -227,13 +245,19 @@ function LocatePartnerButton({ currentUser }: { currentUser: string }) {
         container.onclick = function(e) {
           e.stopPropagation();
           if (partnerLoc) {
+            const lat = Number(partnerLoc.lat);
+            const lng = Number(partnerLoc.lng);
+            if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) {
+              toast.error(`暂无 ${partnerName} 的有效位置信息`);
+              return;
+            }
             const isOffline = (Date.now() - partnerLoc.timestamp) > 15 * 60 * 1000;
             if (isOffline) {
-              alert(`${partnerName} 已离线超过15分钟，位置可能不准确。`);
+              toast.info(`${partnerName} 已离线超过15分钟，位置可能不准确。`);
             }
-            map.flyTo([partnerLoc.lat, partnerLoc.lng], 16, { duration: 1.2 });
+            map.flyTo([lat, lng], 16, { duration: 1.2 });
           } else {
-            alert(`暂无 ${partnerName} 的位置信息`);
+            toast.error(`暂无 ${partnerName} 的位置信息`);
           }
         }
         return container;
@@ -270,7 +294,11 @@ export function MapComponent({
   routeMode?: boolean,
   routedUids?: string[],
 }) {
-  const validLocs = locs.filter(l => l.lat && l.lng);
+  const validLocs = locs.filter(l => {
+    const lat = Number(l.lat);
+    const lng = Number(l.lng);
+    return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
+  });
   const markerRefs = useRef<{ [key: string]: L.Marker | null }>({});
   const [routePath, setRoutePath] = useState<[number, number][] | null>(null);
 
@@ -281,14 +309,14 @@ export function MapComponent({
       setRoutePath(null);
       return;
     }
-    const coords = validLocs.map(l => `${l.lng},${l.lat}`).join(';');
+    const coords = validLocs.map(l => `${Number(l.lng)},${Number(l.lat)}`).join(';');
     const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
     fetch(url)
       .then(r => r.json())
       .then(data => {
         if (data.routes?.[0]) {
           const path = data.routes[0].geometry.coordinates.map(
-            (c: [number, number]) => [c[1], c[0]] as [number, number]
+            (c: [number, number]) => [Number(c[1]), Number(c[0])] as [number, number]
           );
           setRoutePath(path);
         }
@@ -335,10 +363,12 @@ export function MapComponent({
 
         {validLocs.map((loc, i) => {
           const isInRoute = routedUids.includes(loc.uid ?? loc.n);
+          const lat = Number(loc.lat);
+          const lng = Number(loc.lng);
           return (
             <Marker
               key={loc.uid ?? i}
-              position={[loc.lat, loc.lng]}
+              position={[lat, lng]}
               ref={(r) => { if (r && (loc.uid ?? loc.n)) markerRefs.current[loc.uid ?? loc.n] = r; }}
             >
               <Popup>

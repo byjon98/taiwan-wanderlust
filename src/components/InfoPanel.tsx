@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useFirestoreSync } from '../hooks/useFirestoreSync';
+import { ToastContainer, toast } from './Toast';
 import { AlertTriangle, Plane, Train, CheckCircle2, Circle, Navigation, Plus, X, ShoppingBag, Gift, Sparkles, Package, Coffee, Brush, Heart, Footprints, User, Store, Utensils, ChevronRight, ExternalLink, MapPin, Clock, Tag, MessageSquare, Info, Eye, RotateCcw, RotateCw, Trash2, Undo2, Redo2, Smartphone, Cpu, Edit2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -280,7 +281,7 @@ export default function InfoPanel() {
     const newName = prompt('请输入新分类名称：', module.name);
     if (newName === null) return;
     if (!newName.trim()) {
-      alert('分类名称不能为空');
+      toast.error('分类名称不能为空');
       return;
     }
 
@@ -1468,7 +1469,7 @@ function ItemEditorModal({ item, onClose, onSave }: { item: any | null; onClose:
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      alert('项目名称不能为空');
+      toast.error('项目名称不能为空');
       return;
     }
     onSave({

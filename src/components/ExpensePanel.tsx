@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Wallet, CreditCard, Plus, X, Calculator, ArrowRightLeft, History, Search, Undo2, Navigation, Flame, RefreshCcw, CheckCircle2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { useAppStore } from '../store';
+import { ToastContainer, toast } from './Toast';
 import { useFirestoreSync } from '../hooks/useFirestoreSync';
 import { Expense, PAYMENT_METHODS, CATEGORIES, BENEFICIARIES, ZONES, CONSTANTS, INITIAL_SUNK_COSTS } from '../data-expense';
 import { motion, AnimatePresence } from 'motion/react';
@@ -23,7 +25,7 @@ const BUDGET_INCLUDED_CATEGORIES = [
 ];
 
 export default function ExpensePanel() {
-  const [expenses, setExpenses] = useFirestoreSync<Expense[]>('expenses', 'taiwan_trip_expenses_v3', INITIAL_SUNK_COSTS);
+  const [expenses, setExpenses, isLoaded] = useFirestoreSync<Expense[]>('expenses', 'taiwan_trip_expenses_v3', INITIAL_SUNK_COSTS);
   const [exchangeRate, setExchangeRate] = useState<number>(0.145);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'split' | 'burn'>('dashboard');
   const [editExpenseId, setEditExpenseId] = useState<string | null>(null);
@@ -42,7 +44,8 @@ export default function ExpensePanel() {
   const [entrySubject, setEntrySubject] = useState('');
   const [entryAmount, setEntryAmount] = useState('');
   const [entryCurrency, setEntryCurrency] = useState<'TWD' | 'MYR'>('TWD');
-  const [entryAdvancedBy, setEntryAdvancedBy] = useState<'jon_100'|'june_100'|'split_50'|'custom'>('jon_100');
+  const { currentUser } = useAppStore();
+  const [entryAdvancedBy, setEntryAdvancedBy] = useState<'jon_100'|'june_100'|'split_50'|'custom'>(currentUser === 'Jon' ? 'jon_100' : 'june_100');
   const [customAdvancedJonAmount, setCustomAdvancedJonAmount] = useState('');
   const [entryPaidBy, setEntryPaidBy] = useState<Expense['paymentMethod']>('cash');
   const [entryCategory, setEntryCategory] = useState('');
@@ -54,8 +57,8 @@ export default function ExpensePanel() {
 
   // Top Up Fields
   const [topUpAmount, setTopUpAmount] = useState('');
-  const [topUpSource, setTopUpSource] = useState<'cash_jon' | 'cash_june' | 'card_jon' | 'card_june' | 'myr_cash'>('cash_jon');
-  const [topUpTarget, setTopUpTarget] = useState<'easycard_jon' | 'easycard_june'>('easycard_jon');
+  const [topUpSource, setTopUpSource] = useState<'cash_jon' | 'cash_june' | 'card_jon' | 'card_june' | 'myr_cash'>(currentUser === 'Jon' ? 'cash_jon' : 'cash_june');
+  const [topUpTarget, setTopUpTarget] = useState<'easycard_jon' | 'easycard_june'>(currentUser === 'Jon' ? 'easycard_jon' : 'easycard_june');
 
   // Initialize
   useEffect(() => {
@@ -63,6 +66,14 @@ export default function ExpensePanel() {
     window.addEventListener('open-expense-fab', handleOpenFab);
     return () => window.removeEventListener('open-expense-fab', handleOpenFab);
   }, []);
+
+  useEffect(() => {
+    // When currentUser changes, update the default states if they haven't been manually heavily edited, 
+    // or just generally reset the defaults to match the new user to avoid confusion.
+    setEntryAdvancedBy(currentUser === 'Jon' ? 'jon_100' : 'june_100');
+    setTopUpSource(currentUser === 'Jon' ? 'cash_jon' : 'cash_june');
+    setTopUpTarget(currentUser === 'Jon' ? 'easycard_jon' : 'easycard_june');
+  }, [currentUser]);
 
   useEffect(() => {
     // Auto calculate current day based on trip start
@@ -244,7 +255,7 @@ export default function ExpensePanel() {
   // Submit Expense
   const handleSubmit = () => {
     const amountNum = parseFloat(entryAmount);
-    if (!entrySubject || !amountNum || !entryCategory) return alert('请填写完整信息！');
+    if (!entrySubject || !amountNum || !entryCategory) return toast.error('请填写完整信息！');
     
     let paidByJon = 0;
     let paidByJune = 0;
@@ -276,6 +287,7 @@ export default function ExpensePanel() {
       forJune = amountNum - forJon;
     }
 
+    const originalExpense = editExpenseId ? expenses.find(e => e.id === editExpenseId) : null;
     const newExpense: Expense = {
       id: editExpenseId || Date.now().toString(),
       subject: entrySubject,
@@ -286,8 +298,11 @@ export default function ExpensePanel() {
       forJon, forJune,
       category: entryCategory,
       zone: entryZone === 'custom' ? customZoneText : entryZone,
-      timestamp: editExpenseId ? (expenses.find(e => e.id === editExpenseId)?.timestamp || Date.now()) : Date.now(),
+      timestamp: originalExpense ? originalExpense.timestamp : Date.now(),
       day: entryDay,
+      ...(originalExpense?.isTransfer !== undefined && { isTransfer: originalExpense.isTransfer }),
+      ...(originalExpense?.transferTo !== undefined && { transferTo: originalExpense.transferTo }),
+      ...(originalExpense?.isSettlement !== undefined && { isSettlement: originalExpense.isSettlement }),
     };
     
     if (editExpenseId) {
@@ -370,7 +385,7 @@ export default function ExpensePanel() {
   };
 
   const handleSettleUp = () => {
-    if (Math.abs(stats.jonOwesJune) < 0.1) return alert('无需结算，账目已平。');
+    if (Math.abs(stats.jonOwesJune) < 0.1) return toast.info('无需结算，账目已平。');
     
     const amountMyr = Math.abs(stats.jonOwesJune);
     const amountTwd = amountMyr / exchangeRate;
@@ -395,7 +410,7 @@ export default function ExpensePanel() {
     };
 
     setExpenses(prev => [newExpense, ...prev]);
-    alert('已生成清账记录！');
+    toast.success('已生成清账记录！');
   };
 
   const deleteExpense = (id: string) => {
@@ -425,7 +440,7 @@ export default function ExpensePanel() {
         else if (latitude > 23.7 && latitude < 24.0) setEntryZone('nantou');
         else setEntryZone('taipei');
       }, () => {
-        alert("定位失败");
+        toast.error("定位失败");
       });
     }
   };
@@ -451,8 +466,27 @@ export default function ExpensePanel() {
   const currentConverted = entryAmount ? (entryCurrency === 'TWD' ? parseFloat(entryAmount) * exchangeRate : parseFloat(entryAmount) / exchangeRate).toFixed(2) : '0.00';
   const oppositeCurrency = entryCurrency === 'TWD' ? 'MYR' : 'TWD';
 
+  if (!isLoaded) {
+    return (
+      <div className="flex flex-col h-full bg-white p-6 animate-pulse">
+        <div className="h-8 w-32 bg-gray-200 rounded mb-2" />
+        <div className="h-4 w-48 bg-gray-200 rounded mb-8" />
+        <div className="h-24 w-full bg-gray-100 rounded-2xl mb-4" />
+        <div className="flex gap-4 mb-4">
+          <div className="h-32 flex-1 bg-gray-100 rounded-2xl" />
+          <div className="h-32 flex-1 bg-gray-100 rounded-2xl" />
+        </div>
+        <div className="space-y-4">
+          <div className="h-16 w-full bg-gray-50 rounded-xl" />
+          <div className="h-16 w-full bg-gray-50 rounded-xl" />
+          <div className="h-16 w-full bg-gray-50 rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col h-full bg-white pb-20 lg:pb-0 relative text-[#1d1d1f] font-sans antialiased">
+    <div className="flex flex-col h-full bg-white pb-32 lg:pb-0 relative text-[#1d1d1f] font-sans antialiased">
       
       {/* HEADER */}
       <div className="pt-8 pb-4 px-6 border-b border-gray-100 flex flex-col gap-4">
@@ -1034,7 +1068,7 @@ export default function ExpensePanel() {
                     onChange={e => setEntryDay(parseInt(e.target.value))}
                     className="w-20 bg-gray-50 border-none rounded-lg text-xs font-bold text-gray-600 px-2 outline-none"
                   >
-                    <option value={0}>N/A</option>
+                    <option value={0}>Day 0 (出发前)</option>
                     {[...Array(CONSTANTS.TOTAL_DAYS)].map((_, i) => (
                       <option key={i} value={i+1}>Day {i+1}</option>
                     ))}

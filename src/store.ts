@@ -37,8 +37,15 @@ function syncFirestore<T>(docId: string, localStorageKey: string, defaultValue: 
       } else {
         cloudData = rawData as T;
       }
-      set({ [docId]: cloudData });
+      set((state: any) => ({
+        [docId]: cloudData,
+        _loadedCollections: { ...(state._loadedCollections || {}), [docId]: true }
+      }));
       localStorage.setItem(localStorageKey, JSON.stringify(cloudData));
+    } else {
+      set((state: any) => ({
+        _loadedCollections: { ...(state._loadedCollections || {}), [docId]: true }
+      }));
     }
   });
 }
@@ -51,6 +58,12 @@ const writeFirestore = (docId: string, localStorageKey: string, newValue: any) =
 };
 
 interface AppState {
+  hasVerifiedPin: boolean;
+  setHasVerifiedPin: (v: boolean) => void;
+
+  _loadedCollections: Record<string, boolean>;
+  isAppReady: () => boolean;
+
   currentUser: 'Jon' | 'June';
   setCurrentUser: (u: 'Jon' | 'June') => void;
   
@@ -80,6 +93,24 @@ export const useAppStore = create<AppState>((set, get) => {
   syncFirestore('store_remarks', 'taiwan_trip_remarks_v1', {}, set);
 
   return {
+    hasVerifiedPin: localStorage.getItem('taiwan_trip_pin_verified') === 'true',
+    setHasVerifiedPin: (v) => {
+      if (v) localStorage.setItem('taiwan_trip_pin_verified', 'true');
+      else localStorage.removeItem('taiwan_trip_pin_verified');
+      set({ hasVerifiedPin: v });
+    },
+
+    _loadedCollections: {},
+    isAppReady: () => {
+      const s = get();
+      // If we have data in localStorage, we consider it ready to prevent flicker.
+      // Or if all collections have loaded from firestore once.
+      const hasLocalRoute = !!localStorage.getItem('my_app_routeItems');
+      const hasLocalStores = !!localStorage.getItem('taiwan_trip_custom_stores_v1');
+      if (hasLocalRoute && hasLocalStores) return true;
+      return s._loadedCollections['routeItems'] && s._loadedCollections['custom_stores'];
+    },
+
     currentUser: (localStorage.getItem('taiwan_trip_whoami') as 'Jon' | 'June') || 'Jon',
     setCurrentUser: (u) => {
       localStorage.setItem('taiwan_trip_whoami', u);

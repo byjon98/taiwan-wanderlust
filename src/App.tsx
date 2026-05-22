@@ -8,7 +8,9 @@ import ExpensePanel from './components/ExpensePanel';
 import { Clock as ClockIcon, Search, Map, Filter, ArrowUpDown, Info, Check, Plus, ShoppingBag, MapPin, ExternalLink, Scale, Navigation, Sparkles, ChevronRight, Calendar, Home, Wallet, ArrowUp } from 'lucide-react';
 import { MapComponent } from './components/MapComponent';
 import { Clock } from './components/Clock';
+import { WeatherWidget } from './components/WeatherWidget';
 import { Store, RouteItem } from './types';
+import { ToastContainer, toast } from './components/Toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -25,6 +27,28 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const flattenedInfoLocs = [...souvenirModules, ...groceryModules].flatMap(mod => 
+  mod.items.map((item, i) => ({
+    ...item,
+    t: mod.name,
+    f: item.d,
+    s: 5,
+    zone: mod.name,
+    price: item.price.includes('NT$ 800') ? 'exp' : (item.price.includes('NT$ 200') ? 'mid' : 'cheap'),
+    eat: item.buy,
+    tips: item.tip,
+    r: item.eval,
+    uid: `info-${mod.id}-${i}`,
+    region: '旅行资讯',
+    regionId: 'info',
+    isInfoItem: true,
+    moduleId: mod.id,
+    h: [],
+    cl: '',
+    how: mod.name
+  }))
+);
+
 export default function App() {
   const {
     viewMode, setViewMode,
@@ -33,8 +57,12 @@ export default function App() {
     routeItems, setRouteItems,
     customStores, setCustomStores,
     storeRemarks, setStoreRemarks,
-    currentUser, setCurrentUser
+    currentUser, setCurrentUser,
+    isAppReady,
+    hasVerifiedPin, setHasVerifiedPin
   } = useAppStore();
+
+  const [pinInput, setPinInput] = useState('');
 
   const [activeZone, setActiveZone] = useState<string | null>(null);
   const [showMap, setShowMap] = useState(false);
@@ -78,13 +106,14 @@ export default function App() {
   const [newStoreName, setNewStoreName] = useState('');
   const [newStoreZone, setNewStoreZone] = useState('');
   const [newStoreJson, setNewStoreJson] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
-  const handleAddStoreAI = () => {
+  const handleAddStoreAI = async () => {
     const storeTarget = newStoreName || searchQuery || "值得推荐的店面";
     const prompt = `作为专业的台湾旅游达人，请根据你的知识库为我介绍这家店(或相关推荐)："${storeTarget}"。
 了解清楚它的特色、评价和营业时间后，请严格按照以下 JSON 格式输出结果，不要输出任何其他多余的文字或 markdown 标记（例如不要输出 \`\`\`json）：
 {
-  "n": "\${newStoreName || '店名'}",
+  "n": "${newStoreName || '店名'}",
   "f": "店面特色、背景与必买简述",
   "do": "必做体验（一句话）",
   "eat": "必吃/必买推荐（逗号分隔）",
@@ -99,12 +128,45 @@ export default function App() {
   "lat": "该店的精准纬度(数字，例如 25.033。不要回答不知道或0，尽全力根据区位估算)",
   "lng": "该店的精准经度(数字，例如 121.564。不要回答不知道或0，尽全力根据区位估算)"
 }`;
-    navigator.clipboard.writeText(prompt).then(() => {
-      alert('Prompt 已复制！\\n\\n请手动前往 Gemini (或其他 AI) 粘贴对话，获取 JSON 后回来进入第二步粘贴。');
+
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('GEMINI_API_KEY');
+    if (!apiKey) {
+      const key = window.prompt("请输入您的 Gemini API Key (仅保存在本地)：");
+      if (!key) {
+        toast.error('需要 API Key 才能自动获取');
+        return;
+      }
+      localStorage.setItem('GEMINI_API_KEY', key);
+    }
+
+    setIsAiLoading(true);
+    toast.info('正在请求 AI 生成数据，请稍候...');
+
+    try {
+      const { GoogleGenAI } = await import('@google/genai');
+      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('GEMINI_API_KEY')! });
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt
+      });
+      
+      let rawJson = response.text;
+      const jsonMatch = rawJson.match(/\{[\s\S]*\}/);
+      if (jsonMatch) rawJson = jsonMatch[0];
+      
+      setNewStoreJson(rawJson);
       setAddStoreStep(2);
-    }).catch(() => {
-      alert('自动复制失败，请重试');
-    });
+      toast.success('AI 数据生成成功！请确认后保存。');
+    } catch (e: any) {
+      toast.error('AI 请求失败: ' + e.message);
+      // Fallback to manual clipboard
+      navigator.clipboard.writeText(prompt).then(() => {
+        toast.info('已回退至手动模式：Prompt 已复制，请前往 AI 粘贴');
+        setAddStoreStep(2);
+      });
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   const saveCustomStore = () => {
@@ -126,9 +188,9 @@ export default function App() {
       setNewStoreName('');
       setNewStoreJson('');
       setNewStoreZone('');
-      alert('添加成功！');
+      toast.success('添加成功！');
     } catch (e) {
-      alert('JSON 格式错误，请检查是否完全粘贴了 AI 返回的 JSON 代码。');
+      toast.error('JSON 格式错误，请检查是否完全粘贴了 AI 返回的 JSON 代码。');
     }
   };
 
@@ -182,6 +244,15 @@ export default function App() {
 
   
   const [openAtTime, setOpenAtTime] = useState<string>('');
+  const [nearbyFilter, setNearbyFilter] = useState<{lat: number, lng: number, dist: number} | null>(null);
+  
+  useEffect(() => {
+    // If user changes search query, clear the nearby filter
+    if (nearbyFilter && !searchQuery.includes('距离约')) {
+      setNearbyFilter(null);
+    }
+  }, [searchQuery]);
+
   const [showFilters, setShowFilters] = useState(false);
   const [showZones, setShowZones] = useState(false);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
@@ -235,10 +306,7 @@ export default function App() {
     document.getElementById('scroll-container-desktop')?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+
 
   useEffect(() => {
     if (expandedCardId) {
@@ -393,29 +461,7 @@ export default function App() {
 
     // Include Info Items in search results
     if (searchQuery) {
-      const infoLocs = [...souvenirModules, ...groceryModules].flatMap(mod => 
-        mod.items.map((item, i) => ({
-          ...item,
-          t: mod.name,
-          f: item.d,
-          s: 5,
-          zone: mod.name,
-          // Map mid/cheap/exp logic or just use mid
-          price: item.price.includes('NT$ 800') ? 'exp' : (item.price.includes('NT$ 200') ? 'mid' : 'cheap'),
-          eat: item.buy,
-          tips: item.tip,
-          r: item.eval,
-          uid: `info-${mod.id}-${i}`,
-          region: '旅行资讯',
-          regionId: 'info',
-          isInfoItem: true,
-          moduleId: mod.id,
-          h: [], // We'll display hours string instead of number range for these
-          cl: '',
-          how: mod.name
-        }))
-      );
-      sourceLocs = [...sourceLocs, ...infoLocs];
+      sourceLocs = [...sourceLocs, ...flattenedInfoLocs];
     }
 
     return sourceLocs.filter(loc => {
@@ -435,16 +481,35 @@ export default function App() {
       
       if (openAtTime && !checkIsOpenAt(loc, openAtTime)) return false;
 
+      if (nearbyFilter) {
+        if (!loc.lat || !loc.lng) return false;
+        const lat1 = nearbyFilter.lat;
+        const lon1 = nearbyFilter.lng;
+        const lat2 = parseFloat(loc.lat);
+        const lon2 = parseFloat(loc.lng);
+        if (isNaN(lat2) || isNaN(lon2)) return false;
+        
+        const R = 6371; // km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distance = R * c;
+        if (distance > nearbyFilter.dist) return false;
+      }
+
       return true;
     });
-  }, [activeRegionId, activeRegion, activeZone, searchQuery, activeFilters, openAtTime, customStores]);
+  }, [activeRegionId, activeRegion, activeZone, searchQuery, activeFilters, openAtTime, customStores, nearbyFilter]);
 
   const toggleCompare = (loc: any) => {
     if (compareSelected.find(c => (c.uid && c.uid === loc.uid) || (!c.uid && c.n === loc.n))) {
       setCompareSelected(prev => prev.filter(c => !((c.uid && c.uid === loc.uid) || (!c.uid && c.n === loc.n))));
     } else {
       if (compareSelected.length >= 4) {
-        alert("Max 4 items to compare");
+        toast.info("最多只能选择 4 个地点进行对比");
         return;
       }
       setCompareSelected(prev => [...prev, loc]);
@@ -459,12 +524,11 @@ export default function App() {
     navigator.clipboard.writeText(prompt).then(() => {
       // Show a brief native toast-like feedback
       const el = document.createElement('div');
-      el.textContent = '✅ Prompt 已复制！去 Gemini 粘贴即可。';
-      el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#2D3436;color:#fff;padding:8px 18px;border-radius:999px;font-size:13px;font-weight:600;z-index:99999;pointer-events:none;animation:fadeInUp 0.3s ease';
-      document.body.appendChild(el);
-      setTimeout(() => el.remove(), 2800);
+      toast.success('Prompt 已复制，请前往 AI 粘贴');
     }).catch(() => {
-      alert('请手动复制以下 Prompt:\n\n' + prompt);
+      navigator.clipboard.writeText(prompt).then(() => {
+        toast.success('Prompt 已复制，请前往 AI 粘贴');
+      });
     });
   };
 
@@ -512,41 +576,79 @@ export default function App() {
   };
 
   const optimizeRoute = () => {
-
     if (routeItems.length < 2) {
-      alert('You need at least 2 locations to optimize the route.');
+      toast.info('您需要至少 2 个地点才能优化路线');
       return;
     }
     
-    // Sort by zone string logically
-    const sorted = [...routeItems].sort((a, b) => {
-      const zoneA = a.zone || '';
-      const zoneB = b.zone || '';
-      return zoneA.localeCompare(zoneB);
-    });
-    setRouteItems(sorted);
+    const getDist = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+    };
+
+    const unvisited = [...routeItems];
+    const optimized = [unvisited.shift()!];
+
+    while (unvisited.length > 0) {
+      const current = optimized[optimized.length - 1];
+      let nearestIdx = 0;
+      let minDst = Infinity;
+
+      for (let i = 0; i < unvisited.length; i++) {
+        const item = unvisited[i];
+        const lat1 = parseFloat(current.lat as any);
+        const lon1 = parseFloat(current.lng as any);
+        const lat2 = parseFloat(item.lat as any);
+        const lon2 = parseFloat(item.lng as any);
+        
+        let dst = Infinity;
+        if (!isNaN(lat1) && !isNaN(lon1) && !isNaN(lat2) && !isNaN(lon2)) {
+          dst = getDist(lat1, lon1, lat2, lon2);
+        } else {
+          dst = current.zone === item.zone ? 0 : 9999;
+        }
+
+        if (dst < minDst) {
+          minDst = dst;
+          nearestIdx = i;
+        }
+      }
+
+      optimized.push(unvisited.splice(nearestIdx, 1)[0]);
+    }
+
+    setRouteItems(optimized);
+    toast.success('路线已智能优化（最短距离规划）');
   };
 
-  const handleLocateSelect = (dist: string) => {
+  const handleLocateSelect = (distStr: string) => {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser");
+      toast.error("Geolocation is not supported by your browser");
       return;
     }
     
-    // Simulate real behavior
+    const dist = parseInt(distStr); // '1km' -> 1
+    
+    toast.info("正在获取位置...");
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        alert(`[Prototype] Simulated finding locations within ${dist} of your current position (${position.coords.latitude.toFixed(2)}, ${position.coords.longitude.toFixed(2)})`);
-        setActiveRegionId('taipei');
-        setSearchQuery(`距离约 ${dist}`);
+        const { latitude, longitude } = position.coords;
+        setActiveRegionId('all');
+        setNearbyFilter({ lat: latitude, lng: longitude, dist });
+        setSearchQuery(`距离约 ${distStr}以内`);
         setActiveTab('explore');
         setActiveZone(null);
         setShowLocateModal(false);
       },
       (error) => {
-        alert(`[Prototype] Simulated finding locations within ${dist} (Fallback mode without actual GPS)`);
+        toast.error("无法获取您的当前位置，请检查定位权限。");
         setActiveRegionId('taipei');
-        setSearchQuery(`距离约 ${dist}`);
+        setSearchQuery(`距离约 ${distStr}`);
         setActiveTab('explore');
         setActiveZone(null);
         setShowLocateModal(false);
@@ -558,9 +660,77 @@ export default function App() {
     setShowLocateModal(true);
   };
 
+  if (!hasVerifiedPin) {
+    return (
+      <div className="min-h-screen w-full bg-white flex flex-col items-center justify-center p-6 select-none relative overflow-hidden">
+        <ToastContainer />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-tr from-gray-100 to-transparent rounded-full blur-3xl opacity-50 pointer-events-none -z-10" />
+        
+        <div className="flex flex-col items-center justify-center max-w-sm mx-auto space-y-8 w-full z-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="w-20 h-20 bg-white border border-gray-100 rounded-3xl flex items-center justify-center shadow-sm">
+            <span className="text-4xl">🇹🇼</span>
+          </div>
+          
+          <div className="text-center space-y-2">
+            <h1 className="text-2xl font-black text-[#2D3436] tracking-tight">旅行暗号</h1>
+            <p className="text-xs text-gray-400 font-bold tracking-widest uppercase">PLEASE ENTER PIN TO CONTINUE</p>
+          </div>
+
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (pinInput === '0523') {
+                setHasVerifiedPin(true);
+                toast.success('验证成功！欢迎回来。');
+              } else {
+                toast.error('暗号错误');
+                setPinInput('');
+              }
+            }}
+            className="w-full flex flex-col items-center space-y-4"
+          >
+            <input
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              autoFocus
+              value={pinInput}
+              onChange={(e) => setPinInput(e.target.value)}
+              className="w-48 text-center text-3xl font-black tracking-[0.5em] p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:bg-white focus:border-indigo-400 outline-none transition-all placeholder:text-gray-300 placeholder:font-normal placeholder:tracking-normal"
+              placeholder="••••"
+              maxLength={4}
+            />
+            <button
+              type="submit"
+              disabled={pinInput.length < 4}
+              className="w-48 bg-[#2D3436] text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-black active:scale-95 transition-all disabled:opacity-30 disabled:active:scale-100"
+            >
+              验证身份
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAppReady()) {
+    return (
+      <div className="min-h-screen w-full bg-gray-50 flex items-center justify-center p-6">
+        <div className="flex flex-col items-center gap-6 animate-pulse">
+          <div className="w-20 h-20 bg-gray-200 rounded-3xl" />
+          <div className="space-y-3 flex flex-col items-center">
+            <div className="h-6 w-48 bg-gray-200 rounded-full" />
+            <div className="h-3 w-32 bg-gray-200 rounded-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (viewMode === 'landing') {
     return (
       <div className="min-h-screen w-full bg-white text-[#2D3436] font-sans flex flex-col items-center justify-center p-6 text-center select-none relative overflow-hidden">
+        <ToastContainer />
         
         {/* Subtle background decoration to give premium feel without clutter */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-tr from-gray-100 to-transparent rounded-full blur-3xl opacity-50 pointer-events-none -z-10" />
@@ -583,11 +753,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8 text-[11px] font-bold text-gray-500 uppercase tracking-widest">
-            <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span> 北部 22-26°C</span>
-            <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-orange-400"></span> 中南部 26-30°C</span>
-            <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-sky-400"></span> 建议携雨具</span>
-          </div>
+          <WeatherWidget />
 
           <form onSubmit={(e) => {
             e.preventDefault();
@@ -686,6 +852,7 @@ export default function App() {
 
   return (
     <div className="h-[100dvh] w-full bg-white text-[#2D3436] font-sans flex flex-col overflow-hidden leading-snug">
+      <ToastContainer />
       {/* Header */}
       <header 
         onClick={(e) => {
@@ -1155,12 +1322,8 @@ export default function App() {
                         onClick={() => {
                           const prompt = `我正在寻找关于 "${searchQuery}" 的地点信息。\n\n【如果这是一个连锁品牌或有多个分店】：请先简单列出主要的分店选项，向我确认是哪一家。\n【当我说出具体分店后（或如果只有一家店）】：请根据以下九大模块，给我一份极其详细的说明：\n1. 店面背景与特色 (有什么特别的？人家都介绍什么？如果马来西亚也有这个店，有什么是马来西亚没有这边有的)\n2. 推荐体验与必做什么 (What to do)\n3. 必吃/必买 (Must eat/buy)\n4. 避雷指南 (Pitfalls to avoid)\n5. 推荐指数 (Recommendation index)\n6. 营业时间\n7. 实用提示 (Tips)\n8. 地理位置与交通 (How to go)\n9. 其他补充\n\n另外，我还需要你提供：\n- 人均消费估计\n- 是否有抵消（低消）规则及具体金额\n- 综合的网络评价（褒贬都要有）\n- Google Map 的搜索链接\n- Apple Map 的搜索链接`;
                           navigator.clipboard.writeText(prompt).then(() => {
-                            const el = document.createElement('div');
-                            el.textContent = '✅ Prompt 已复制！去 Gemini 粘贴即可。';
-                            el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#2D3436;color:#fff;padding:8px 18px;border-radius:999px;font-size:13px;font-weight:600;z-index:99999;pointer-events:none;';
-                            document.body.appendChild(el);
-                            setTimeout(() => el.remove(), 2800);
-                          }).catch(() => alert('请手动复制 Prompt'));
+                            toast.success('Prompt 已复制，请前往 AI 粘贴');
+                          }).catch(() => toast.error('请手动复制 Prompt'));
                         }}
                         className="bg-[#2D3436] hover:bg-black text-white px-5 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors"
                       >
@@ -1401,12 +1564,8 @@ export default function App() {
                                 e.stopPropagation();
                                 const prompt = `我正在寻找关于 "${loc.n}" 的地点信息，请根据以下九大模块，给我一份极其详细的说明：\n1. 店面背景与特色 (有什么特别的？人家都介绍什么？如果马来西亚也有这个店，有什么是马来西亚没有这边有的)\n2. 推荐体验与必做什么 (What to do)\n3. 必吃/必买 (Must eat/buy)\n4. 避雷指南 (Pitfalls to avoid)\n5. 推荐指数 (Recommendation index)\n6. 营业时间\n7. 实用提示 (Tips)\n8. 地理位置与交通 (How to go)\n9. 其他补充\n\n另外，我还需要你提供：\n- 人均消费估计\n- 是否有抵消（低消）规则及具体金额\n- 综合的网络评价（褒贬都要有）\n- Google Map 的搜索链接\n- Apple Map 的搜索链接`;
                                 navigator.clipboard.writeText(prompt).then(() => {
-                                  const el = document.createElement('div');
-                                  el.textContent = '✅ Prompt 已复制！去 Gemini 粘贴即可。';
-                                  el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#2D3436;color:#fff;padding:8px 18px;border-radius:999px;font-size:13px;font-weight:600;z-index:99999;pointer-events:none;';
-                                  document.body.appendChild(el);
-                                  setTimeout(() => el.remove(), 2800);
-                                }).catch(() => alert('请手动复制 Prompt'));
+                                  toast.success('Prompt 已复制，请前往 AI 粘贴');
+                                }).catch(() => toast.error('请手动复制 Prompt'));
                               }}
                               className="w-9 h-9 rounded-full flex items-center justify-center transition-all bg-indigo-50 hover:bg-indigo-100 text-indigo-500 border border-indigo-200"
                               title="问 AI 这个店的详情"
@@ -1449,12 +1608,8 @@ export default function App() {
                           e.stopPropagation();
                           const prompt = `我正在寻找关于 "${searchQuery}" 的地点信息。\n\n【如果这是一个连锁品牌或有多个分店】：请先简单列出主要的分店选项，向我确认是哪一家。\n【当我说出具体分店后（或如果只有一家店）】：请根据以下九大模块，给我一份极其详细的说明：\n1. 店面背景与特色 (有什么特别的？人家都介绍什么？如果马来西亚也有这个店，有什么是马来西亚没有这边有的)\n2. 推荐体验与必做什么 (What to do)\n3. 必吃/必买 (Must eat/buy)\n4. 避雷指南 (Pitfalls to avoid)\n5. 推荐指数 (Recommendation index)\n6. 营业时间\n7. 实用提示 (Tips)\n8. 地理位置与交通 (How to go)\n9. 其他补充\n\n另外，我还需要你提供：\n- 人均消费估计\n- 是否有抵消（低消）规则及具体金额\n- 综合的网络评价（褒贬都要有）\n- Google Map 的搜索链接\n- Apple Map 的搜索链接`;
                           navigator.clipboard.writeText(prompt).then(() => {
-                            const el = document.createElement('div');
-                            el.textContent = '✅ Prompt 已复制！去 Gemini 粘贴即可。';
-                            el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#2D3436;color:#fff;padding:8px 18px;border-radius:999px;font-size:13px;font-weight:600;z-index:99999;pointer-events:none;';
-                            document.body.appendChild(el);
-                            setTimeout(() => el.remove(), 2800);
-                          }).catch(() => alert('请手动复制 Prompt'));
+                            toast.success('Prompt 已复制，请前往 AI 粘贴');
+                          }).catch(() => toast.error('请手动复制 Prompt'));
                         }}
                         className="bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors shadow-sm cursor-pointer"
                       >
@@ -1468,7 +1623,7 @@ export default function App() {
               
               {/* Compare Floating CTA */}
               {compareSelected.length >= 2 && (
-                <div className="fixed lg:absolute bottom-[110px] left-1/2 -translate-x-1/2 bg-white text-[#2D3436] px-3 py-2 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.12)] flex items-center gap-3 z-20 animate-in slide-in-from-bottom-8 duration-300 border border-gray-100">
+                <div className="fixed lg:absolute bottom-[calc(6rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 bg-white text-[#2D3436] px-3 py-2 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.12)] flex items-center gap-3 z-20 animate-in slide-in-from-bottom-8 duration-300 border border-gray-100">
                   <div className="pl-3 pr-1">
                     <span className="text-[10px] font-bold tracking-widest uppercase text-gray-400 whitespace-nowrap">已选 {compareSelected.length} 项</span>
                   </div>
@@ -1571,7 +1726,7 @@ export default function App() {
 
         {/* Undo Toast for Route Items */}
         {deletedRouteItem && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md text-white px-3 py-2 rounded-full shadow-2xl flex items-center justify-between gap-3 z-50 animate-in slide-in-from-bottom-8 fade-in duration-300">
+          <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md text-white px-3 py-2 rounded-full shadow-2xl flex items-center justify-between gap-3 z-50 animate-in slide-in-from-bottom-8 fade-in duration-300">
             <span className="text-xs pr-1">
               已删除 <span className="font-bold">{deletedRouteItem.item.n}</span>
             </span>
@@ -1589,7 +1744,7 @@ export default function App() {
         
         {/* Undo Toast for Custom Stores */}
         {deletedCustomStore && (
-          <div className="fixed bottom-[4.5rem] left-1/2 -translate-x-1/2 bg-red-600/95 backdrop-blur-md text-white px-3 py-2 rounded-full shadow-2xl flex items-center justify-between gap-3 z-50 animate-in slide-in-from-bottom-8 fade-in duration-300">
+          <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 bg-red-600/95 backdrop-blur-md text-white px-3 py-2 rounded-full shadow-2xl flex items-center justify-between gap-3 z-50 animate-in slide-in-from-bottom-8 fade-in duration-300">
             <span className="text-xs pr-1">
               彻底删除 <span className="font-bold">{deletedCustomStore.item.n}</span>
             </span>
@@ -1692,12 +1847,20 @@ export default function App() {
                 </div>
                 <button 
                   onClick={handleAddStoreAI}
-                  disabled={!newStoreName.trim()}
-                  className="w-full bg-indigo-500 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 mt-4 hover:bg-indigo-600 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100"
+                  disabled={!newStoreName.trim() || isAiLoading}
+                  className={cn(
+                    "w-full font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 mt-4 transition-all",
+                    isAiLoading 
+                      ? "bg-indigo-300 text-white cursor-not-allowed"
+                      : "bg-indigo-500 text-white hover:bg-indigo-600 active:scale-[0.98]"
+                  )}
                 >
-                  <Sparkles className="w-5 h-5" /> 向 Gemini 获取资料
+                  <Sparkles className={cn("w-5 h-5", isAiLoading && "animate-spin")} /> 
+                  {isAiLoading ? 'AI 正在思考...' : '向 Gemini 获取资料'}
                 </button>
-                <p className="text-[10px] text-gray-400 text-center mt-2 leading-relaxed">点击后会自动复制特定的提示词并打开 Gemini。<br/>请在 Gemini 粘贴后将回复的 JSON 代码带回这里。</p>
+                <p className="text-[10px] text-gray-400 text-center mt-2 leading-relaxed">
+                  需要填入您的 Gemini API Key。<br/>若未提供，将回退至手动复制 Prompt 模式。
+                </p>
               </div>
             )}
 

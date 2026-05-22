@@ -27,6 +27,7 @@ import {
   Navigation
 } from 'lucide-react';
 import { regions } from '../data';
+import { ToastContainer, toast } from './Toast';
 
 // Helper to find a location by name across all regions
 const findLocationByName = (name: string) => {
@@ -295,7 +296,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
       if (searchResults.length > 0) {
         scrollToResult(searchIndex + 1);
       } else if (searchQuery.trim()) {
-        alert('未找到相关行程，请尝试其他关键词');
+        toast.error('未找到相关行程，请尝试其他关键词');
       }
     }
   };
@@ -337,7 +338,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
         saveState(next);
       }
     } else {
-      alert("此天数没有系统预设的默认行程！");
+      toast.info("此天数没有系统预设的默认行程！");
     }
   };
 
@@ -766,7 +767,7 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
                                               e.stopPropagation();
                                               const prompt = `我正在寻找关于 "${item.name}" 的详细旅行资讯。请帮我搜索并在九大模块中详细说明。`;
                                               navigator.clipboard.writeText(prompt);
-                                              alert('Prompt 已复制！');
+                                              toast.success('Prompt 已复制！');
                                             }}
                                             className="mt-4 w-full py-2 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-xl text-[10px] font-bold hover:bg-indigo-600 hover:text-white transition-colors"
                                            >

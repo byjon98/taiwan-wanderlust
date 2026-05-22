@@ -93,8 +93,10 @@ export const useAppStore = create<AppState>((set, get) => {
   syncFirestore('store_remarks', 'storeRemarks', 'taiwan_trip_remarks_v1', {}, set);
 
   return {
-    hasVerifiedPin: false,
+    hasVerifiedPin: localStorage.getItem('taiwan_trip_pin_verified') === 'true',
     setHasVerifiedPin: (v) => {
+      if (v) localStorage.setItem('taiwan_trip_pin_verified', 'true');
+      else localStorage.removeItem('taiwan_trip_pin_verified');
       set({ hasVerifiedPin: v });
     },
 

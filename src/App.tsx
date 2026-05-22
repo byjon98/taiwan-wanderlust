@@ -5,7 +5,7 @@ import { souvenirModules, groceryModules } from './data/info';
 import InfoPanel from './components/InfoPanel';
 import ItineraryPanel from './components/ItineraryPanel';
 import ExpensePanel from './components/ExpensePanel';
-import { Clock as ClockIcon, Search, Map, Filter, ArrowUpDown, Info, Check, Plus, ShoppingBag, MapPin, ExternalLink, Scale, Navigation, Sparkles, ChevronRight, Calendar, Home, Wallet, ArrowUp } from 'lucide-react';
+import { Clock as ClockIcon, Search, Map, Filter, ArrowUpDown, Info, Check, Plus, ShoppingBag, MapPin, ExternalLink, Scale, Navigation, Sparkles, ChevronRight, Calendar, Home, Wallet, ArrowUp, X } from 'lucide-react';
 import { MapComponent } from './components/MapComponent';
 import { Clock } from './components/Clock';
 import { WeatherWidget } from './components/WeatherWidget';
@@ -772,16 +772,23 @@ export default function App() {
               placeholder="搜索台北101、夜市等景点..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-transparent text-[#2D3436] font-medium border-b-2 border-gray-200 placeholder-gray-400 pb-3 pl-2 pr-10 text-center text-base focus:outline-none focus:border-[#2D3436] transition-colors"
+              className="w-full bg-transparent text-[#2D3436] font-medium border-b-2 border-gray-200 placeholder-gray-400 pb-3 pl-2 pr-16 text-center text-base focus:outline-none focus:border-[#2D3436] transition-colors"
             />
-            {searchQuery.trim() && (
-              <button 
-                type="submit" 
-                className="absolute right-0 top-1/2 -translate-y-1/2 -mt-1.5 text-gray-400 hover:text-[#2D3436] transition-colors"
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-8 top-1/2 -translate-y-1/2 -mt-1.5 p-1 text-gray-300 hover:text-gray-500 transition-colors"
               >
-                <Search className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             )}
+            <button 
+              type="submit" 
+              className={cn("absolute right-0 top-1/2 -translate-y-1/2 -mt-1.5 text-gray-400 hover:text-[#2D3436] transition-colors", !searchQuery.trim() && "opacity-50 pointer-events-none")}
+            >
+              <Search className="w-5 h-5" />
+            </button>
           </form>
           
           <div className="flex gap-6 md:gap-10 w-full justify-center pt-4 overflow-x-auto no-scrollbar px-4">
@@ -951,8 +958,17 @@ export default function App() {
               placeholder="搜索餐厅、景点、标签…" 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-9 md:h-10 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-full font-medium focus:outline-none focus:ring-0 focus:border-[#2D3436] focus:bg-white transition-all text-xs md:text-sm"
+              className="w-full h-9 md:h-10 pl-10 pr-10 bg-gray-50 border border-gray-200 rounded-full font-medium focus:outline-none focus:ring-0 focus:border-[#2D3436] focus:bg-white transition-all text-xs md:text-sm"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 

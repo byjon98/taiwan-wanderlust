@@ -475,18 +475,19 @@ export default function ItineraryPanel({ onLocationClick }: { onLocationClick: (
         </div>
 
         {!isEditing && (
-          <div className="relative group">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+              </div>
+              <input
+                type="text"
+                placeholder="搜索后按回车跳转 (如 Day 3 或 淡水)..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearch}
+                className="block w-full pl-10 pr-24 py-3 bg-gray-50 border-gray-100 focus:bg-white rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-[#2D3436] placeholder-gray-400"
+              />
             </div>
-            <input
-              type="text"
-              placeholder="搜索后按回车跳转 (如 Day 3 或 淡水)..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={handleSearch}
-              className="block w-full pl-10 pr-10 py-3 bg-gray-50 border-gray-100 focus:bg-white rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-[#2D3436] placeholder-gray-400"
-            />
             {searchQuery && (
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center gap-2">
                 {searchResults.length > 0 && (

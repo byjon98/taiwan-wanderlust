@@ -736,16 +736,27 @@ export default function ExpensePanel() {
           <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-300">
             
             <div className="flex gap-2 mb-4 relative">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-gray-400" />
+              <div className="relative flex-1 flex">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 text-gray-400" />
+                </div>
+                <input 
+                  type="text" 
+                  placeholder="搜索明细 (如: 夜市, Jon)" 
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-800 outline-none focus:bg-white focus:border-black"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
-              <input 
-                type="text" 
-                placeholder="搜索明细 (如: 夜市, Jon)" 
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-800 outline-none focus:bg-white focus:border-black"
-              />
               {deletedHistory.length > 0 && (
                 <button onClick={undoDelete} className="px-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl flex items-center justify-center">
                   <Undo2 className="w-4 h-4" />

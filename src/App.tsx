@@ -143,14 +143,20 @@ export default function App() {
     toast.info('正在请求 AI 生成数据，请稍候...');
 
     try {
-      const { GoogleGenAI } = await import('@google/genai');
-      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('GEMINI_API_KEY')! });
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }]
+        })
       });
       
-      let rawJson = response.text;
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      let rawJson = data.candidates[0].content.parts[0].text;
       const jsonMatch = rawJson.match(/\{[\s\S]*\}/);
       if (jsonMatch) rawJson = jsonMatch[0];
       

@@ -12,15 +12,19 @@ export interface Store {
   zone?: string;
   cuisine?: string;
   hours?: string;
-  lat?: number;
-  lng?: number;
+  lat?: number | string;
+  lng?: number | string;
   img?: string;
+  [key: string]: any;
 }
 
 export interface RouteItem {
   uid: string;
   n: string;
   date?: string; // YYYY-MM-DD
+  lat?: number | string;
+  lng?: number | string;
+  [key: string]: any;
 }
 
 export interface LiveLocation {

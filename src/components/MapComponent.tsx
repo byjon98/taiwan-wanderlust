@@ -8,8 +8,11 @@ import { db } from '../lib/firebase';
 import { Store, LiveLocation } from '../types';
 
 // Fix Leaflet's default icon path issues with Vite
+// @ts-ignore
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+// @ts-ignore
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
+// @ts-ignore
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -111,11 +114,11 @@ function LivePlayersMarker({ currentUser }: { currentUser: string }) {
   return (
     <>
       {Object.entries(players).map(([playerName, data]) => {
-        const lat = Number(data?.lat);
-        const lng = Number(data?.lng);
+        const lat = Number((data as any)?.lat);
+        const lng = Number((data as any)?.lng);
         if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) return null;
 
-        const isOffline = (now - data.timestamp) > 15 * 60 * 1000; // 15 mins offline
+        const isOffline = (now - (data as any).timestamp) > 15 * 60 * 1000; // 15 mins offline
         const isJon = playerName === 'Jon';
         let emoji = isJon ? '🧑🏻' : '👩🏻';
         

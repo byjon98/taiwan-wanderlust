@@ -368,7 +368,7 @@ export default function ExpensePanel() {
       subject: `充值 ${topUpTarget === 'easycard_jon' ? 'Jon' : 'June'} 悠游卡`,
       amount: amountNum,
       currency: 'TWD', // top up is in TWD
-      paymentMethod: topUpSource,
+      paymentMethod: topUpSource as any,
       paidByJon, paidByJune,
       forJon, forJune,
       category: 'misc',

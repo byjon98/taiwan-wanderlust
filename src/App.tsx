@@ -1388,7 +1388,7 @@ export default function App() {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <h2 className="text-xl md:text-3xl font-black text-[#2D3436] tracking-tight">{searchQuery ? 'Search Results' : (activeRegionId === 'all' ? '全部区域' : activeRegion?.name)}</h2>
-                    {!searchQuery && activeRegionId !== 'all' && <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest border border-gray-200 rounded px-1.5 py-0.5">{activeRegion?.day}</span>}
+                    {!searchQuery && activeRegionId !== 'all' && <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest border border-gray-200 rounded px-1.5 py-0.5">{(activeRegion as any)?.day}</span>}
                   </div>
                   {nearbyFilter && (
                     <div className="flex flex-col gap-3 mt-2 sm:mt-0 w-full md:w-auto">
@@ -1549,7 +1549,7 @@ export default function App() {
             if (alreadyIn) {
               setRouteItems(prev => prev.filter(r => !((r.uid && r.uid === loc.uid) || r.n === loc.n)));
             } else {
-              setRouteItems(prev => [...prev, loc]);
+              setRouteItems(prev => [...prev, loc as any]);
             }
           }}
           onLocClick={(uid) => { 

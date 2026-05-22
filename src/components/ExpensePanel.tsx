@@ -228,10 +228,11 @@ export default function ExpensePanel() {
   // Daily Burn Rate (Vertical) grouped by category ID
   const dailyBurn = useMemo(() => {
     const days: Record<number, Record<string, number>> = {};
+    days[0] = {}; // Initialize day 0 for pre-trip expenses
     for(let i = 1; i <= CONSTANTS.TOTAL_DAYS; i++) days[i] = {};
     
     expenses.forEach(e => {
-      if (e.day === 0 || e.isTransfer || e.isSettlement) return; // skip initial sunk costs and transfers
+      if (e.isTransfer || e.isSettlement) return; // skip transfers and settlements
       const amountTwd = e.currency === 'TWD' ? e.amount : e.amount / exchangeRate;
       if (!days[e.day]) days[e.day] = {};
       
@@ -864,7 +865,7 @@ export default function ExpensePanel() {
                           })}
                         </div>
                       </div>
-                      <div className="text-[9px] font-bold text-gray-400 mt-2">{day === 0 ? 'N/A' : `D${day}`}</div>
+                      <div className="text-[9px] font-bold text-gray-400 mt-2">{day === 0 ? 'D0' : `D${day}`}</div>
                     </div>
                   );
                 })}

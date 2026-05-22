@@ -4,7 +4,7 @@ import { db } from './lib/firebase';
 import { Store, RouteItem } from './types';
 
 // Generic sync utility for Zustand
-function syncFirestore<T>(docId: string, localStorageKey: string, defaultValue: T, set: any) {
+function syncFirestore<T>(docId: string, stateKey: string, localStorageKey: string, defaultValue: T, set: any) {
   // 1. Initial Load from LocalStorage
   try {
     const local = localStorage.getItem(localStorageKey);
@@ -13,9 +13,9 @@ function syncFirestore<T>(docId: string, localStorageKey: string, defaultValue: 
       if (typeof parsed === 'string') {
         try { parsed = JSON.parse(parsed); } catch {}
       }
-      set({ [docId]: parsed });
+      set({ [stateKey]: parsed });
     } else {
-      set({ [docId]: defaultValue });
+      set({ [stateKey]: defaultValue });
     }
   } catch {}
 
@@ -38,7 +38,7 @@ function syncFirestore<T>(docId: string, localStorageKey: string, defaultValue: 
         cloudData = rawData as T;
       }
       set((state: any) => ({
-        [docId]: cloudData,
+        [stateKey]: cloudData,
         _loadedCollections: { ...(state._loadedCollections || {}), [docId]: true }
       }));
       localStorage.setItem(localStorageKey, JSON.stringify(cloudData));
@@ -88,9 +88,9 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set, get) => {
   // Setup syncs
-  syncFirestore('routeItems', 'my_app_routeItems', [], set);
-  syncFirestore('custom_stores', 'taiwan_trip_custom_stores_v1', [], set);
-  syncFirestore('store_remarks', 'taiwan_trip_remarks_v1', {}, set);
+  syncFirestore('routeItems', 'routeItems', 'my_app_routeItems', [], set);
+  syncFirestore('custom_stores', 'customStores', 'taiwan_trip_custom_stores_v1', [], set);
+  syncFirestore('store_remarks', 'storeRemarks', 'taiwan_trip_remarks_v1', {}, set);
 
   return {
     hasVerifiedPin: false,

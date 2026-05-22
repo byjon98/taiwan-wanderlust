@@ -569,24 +569,24 @@ export default function ExpensePanel() {
             </div>
 
             {/* Daily Rollover Budget Card */}
-            <div className="bg-gradient-to-br from-[#1e293b] to-[#0f172a] rounded-2xl p-5 border border-slate-800 text-white shadow-xl">
+            <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm text-gray-800">
               <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center gap-2">
-                  <Flame className="w-5 h-5 text-amber-400 animate-pulse" />
+                  <Flame className="w-5 h-5 text-amber-500 animate-pulse" />
                   <div>
-                    <h3 className="font-bold text-sm">每日滚动预算</h3>
-                    <p className="text-[9px] font-bold text-slate-400">日常额度 NT$ 3,000 / 天 (排除大笔消费与预付)</p>
+                    <h3 className="font-bold text-sm text-gray-800">每日滚动预算</h3>
+                    <p className="text-[9px] font-bold text-gray-400">日常额度 NT$ 3,000 / 天 (排除大笔消费与预付)</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] bg-indigo-500/20 text-indigo-300 font-bold px-2 py-0.5 rounded-lg border border-indigo-500/30">
+                  <span className="text-[10px] bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold px-2 py-0.5 rounded-lg border border-indigo-100">
                     Day {selectedBudgetDay}
                   </span>
                 </div>
               </div>
 
               {/* Day selection tabs */}
-              <div className="flex bg-white/5 p-1 rounded-xl w-full mb-4 overflow-x-auto no-scrollbar gap-1">
+              <div className="flex bg-gray-100 p-1 rounded-xl w-full mb-4 overflow-x-auto no-scrollbar gap-1">
                 {[...Array(10)].map((_, i) => {
                   const d = i + 1;
                   const isSelected = selectedBudgetDay === d;
@@ -601,12 +601,12 @@ export default function ExpensePanel() {
                       className={cn(
                         "flex-1 min-w-[34px] py-1.5 rounded-lg text-[9px] font-bold transition-all relative flex flex-col items-center", 
                         isSelected 
-                          ? "bg-white text-slate-900 shadow-sm" 
-                          : "text-slate-400 hover:text-white hover:bg-white/5"
+                          ? "bg-white text-gray-900 shadow-sm" 
+                          : "text-gray-500 hover:text-gray-800 hover:bg-gray-200/50"
                       )}
                     >
                       <span>D{d}</span>
-                      <span className={cn("text-[7px] mt-0.5 font-bold", isSelected ? "text-indigo-600" : (isNeg ? "text-rose-400" : "text-emerald-400"))}>
+                      <span className={cn("text-[7px] mt-0.5 font-bold", isSelected ? "text-indigo-600" : (isNeg ? "text-rose-500" : "text-emerald-500"))}>
                         {dayStat ? (dayStat.remaining >= 0 ? `+${Math.round(dayStat.remaining)}` : `${Math.round(dayStat.remaining)}`) : ''}
                       </span>
                     </button>
@@ -623,18 +623,18 @@ export default function ExpensePanel() {
 
                 return (
                   <div className="space-y-4">
-                    <div className="grid grid-cols-3 gap-2 text-center bg-white/5 p-3 rounded-xl border border-white/5">
+                    <div className="grid grid-cols-3 gap-2 text-center bg-gray-50 p-3 rounded-xl border border-gray-100">
                       <div>
-                        <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-1">起始可用</div>
-                        <div className="text-xs font-black">NT$ {Math.round(currentStat.budget).toLocaleString()}</div>
+                        <div className="text-[8px] font-bold text-gray-400 uppercase tracking-wider mb-1">起始可用</div>
+                        <div className="text-xs font-black text-gray-800">NT$ {Math.round(currentStat.budget).toLocaleString()}</div>
                       </div>
-                      <div className="border-x border-white/10">
-                        <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-1">今日已用</div>
-                        <div className="text-xs font-black text-amber-300">NT$ {Math.round(currentStat.spent).toLocaleString()}</div>
+                      <div className="border-x border-gray-200">
+                        <div className="text-[8px] font-bold text-gray-400 uppercase tracking-wider mb-1">今日已用</div>
+                        <div className="text-xs font-black text-amber-600">NT$ {Math.round(currentStat.spent).toLocaleString()}</div>
                       </div>
                       <div>
-                        <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-1">今日结余</div>
-                        <div className={cn("text-xs font-black", isOverspent ? "text-rose-400" : "text-emerald-400")}>
+                        <div className="text-[8px] font-bold text-gray-400 uppercase tracking-wider mb-1">今日结余</div>
+                        <div className={cn("text-xs font-black", isOverspent ? "text-rose-500" : "text-emerald-600")}>
                           NT$ {Math.round(currentStat.remaining).toLocaleString()}
                         </div>
                       </div>
@@ -642,11 +642,11 @@ export default function ExpensePanel() {
 
                     {/* Progress Bar */}
                     <div className="space-y-1">
-                      <div className="flex justify-between text-[9px] font-bold text-slate-300">
+                      <div className="flex justify-between text-[9px] font-bold text-gray-500">
                         <span>日支出燃烧率</span>
                         <span>{currentStat.budget > 0 ? Math.round((currentStat.spent / currentStat.budget) * 100) : 0}%</span>
                       </div>
-                      <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                      <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
                         <div 
                           className={cn("h-full rounded-full transition-all duration-500", isOverspent ? "bg-rose-500" : "bg-emerald-400")} 
                           style={{ width: `${Math.min(100, currentStat.budget > 0 ? (currentStat.spent / currentStat.budget) * 100 : 0)}%` }} 
@@ -658,21 +658,21 @@ export default function ExpensePanel() {
                     {(() => {
                       const dayIncludedExpenses = expenses.filter(e => e.day === selectedBudgetDay && !e.isTransfer && !e.isSettlement && BUDGET_INCLUDED_CATEGORIES.includes(e.category));
                       if (dayIncludedExpenses.length === 0) {
-                        return <p className="text-[9px] text-slate-400 italic text-center">今天没有日常预算范围内的消费 🍃</p>;
+                        return <p className="text-[9px] text-gray-400 italic text-center">今天没有日常预算范围内的消费 🍃</p>;
                       }
 
                       return (
                         <div className="space-y-1.5 pt-1">
-                          <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">今日明细 ({dayIncludedExpenses.length}笔)</div>
+                          <div className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">今日明细 ({dayIncludedExpenses.length}笔)</div>
                           <div className="max-h-[80px] overflow-y-auto no-scrollbar space-y-1 pr-1">
                             {dayIncludedExpenses.map(e => {
                               const amtTwd = e.currency === 'TWD' ? e.amount : e.amount / exchangeRate;
                               return (
-                                <div key={e.id} className="flex justify-between items-center text-[10px] bg-white/5 px-2 py-1 rounded">
-                                  <span className="truncate max-w-[130px] font-medium text-slate-200">
+                                <div key={e.id} className="flex justify-between items-center text-[10px] bg-gray-50 px-2 py-1 rounded border border-gray-100/50">
+                                  <span className="truncate max-w-[130px] font-medium text-gray-700">
                                     {getCategoryLabel(e.category).split(' ')[0]} {e.subject}
                                   </span>
-                                  <span className="font-mono font-bold text-indigo-300">NT$ {Math.round(amtTwd)}</span>
+                                  <span className="font-mono font-bold text-indigo-600">NT$ {Math.round(amtTwd)}</span>
                                 </div>
                               );
                             })}

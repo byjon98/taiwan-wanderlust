@@ -143,26 +143,14 @@ export default function App() {
     toast.info('正在请求 AI 生成数据，请稍候...');
 
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        })
+      const { GoogleGenAI } = await import('@google/genai');
+      const ai = new GoogleGenAI({ apiKey: apiKey });
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: prompt
       });
       
-      if (!response.ok) {
-        let errMsg = response.statusText;
-        try {
-          const errText = await response.text();
-          const errObj = JSON.parse(errText);
-          if (errObj.error && errObj.error.message) errMsg = errObj.error.message;
-        } catch (e) {}
-        throw new Error(`API Error ${response.status}: ${errMsg}`);
-      }
-      
-      const data = await response.json();
-      let rawJson = data.candidates[0].content.parts[0].text;
+      let rawJson = response.text;
       const jsonMatch = rawJson.match(/\{[\s\S]*\}/);
       if (jsonMatch) rawJson = jsonMatch[0];
       
@@ -232,26 +220,14 @@ export default function App() {
 ]`;
 
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        })
+      const { GoogleGenAI } = await import('@google/genai');
+      const ai = new GoogleGenAI({ apiKey: apiKey });
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: prompt
       });
       
-      if (!response.ok) {
-        let errMsg = response.statusText;
-        try {
-          const errText = await response.text();
-          const errObj = JSON.parse(errText);
-          if (errObj.error && errObj.error.message) errMsg = errObj.error.message;
-        } catch (e) {}
-        throw new Error(`API Error ${response.status}: ${errMsg}`);
-      }
-      
-      const data = await response.json();
-      let rawJson = data.candidates[0].content.parts[0].text;
+      let rawJson = response.text;
       const jsonMatch = rawJson.match(/\[[\s\S]*\]/);
       if (jsonMatch) rawJson = jsonMatch[0];
       

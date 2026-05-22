@@ -12,33 +12,72 @@ export function WeatherWidget() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchWeather = async () => {
+    let watchId: number;
+
+    const fetchWeather = async (lat: number, lng: number, cityLabel: string) => {
       try {
-        // Taipei (25.033, 121.5654) and Kaohsiung (22.6273, 120.3014)
-        const resTpe = await fetch('https://api.open-meteo.com/v1/forecast?latitude=25.033&longitude=121.5654&current=temperature_2m,weather_code');
-        const dataTpe = await resTpe.json();
-
-        const resKho = await fetch('https://api.open-meteo.com/v1/forecast?latitude=22.6273&longitude=120.3014&current=temperature_2m,weather_code');
-        const dataKho = await resKho.json();
-
+        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weather_code`);
+        const data = await res.json();
+        
         const mapCodeToCondition = (code: number) => {
           if (code <= 3) return '晴/多云';
           if (code <= 69) return '阴/阵雨';
           return '雨';
         };
 
-        setWeather([
-          { city: '台北', temp: Math.round(dataTpe.current.temperature_2m), condition: mapCodeToCondition(dataTpe.current.weather_code) },
-          { city: '高雄', temp: Math.round(dataKho.current.temperature_2m), condition: mapCodeToCondition(dataKho.current.weather_code) }
-        ]);
+        return {
+          city: cityLabel,
+          temp: Math.round(data.current.temperature_2m),
+          condition: mapCodeToCondition(data.current.weather_code)
+        };
       } catch (err) {
         console.error("Weather fetch failed", err);
-      } finally {
-        setLoading(false);
+        return null;
       }
     };
 
-    fetchWeather();
+    const loadAllWeather = async (currentLat?: number, currentLng?: number) => {
+      setLoading(true);
+      const results: WeatherData[] = [];
+      
+      // Always fetch Taipei
+      const tpe = await fetchWeather(25.033, 121.5654, '台北');
+      if (tpe) results.push(tpe);
+
+      // Fetch Current Location or Kaohsiung as fallback
+      if (currentLat && currentLng) {
+        const cur = await fetchWeather(currentLat, currentLng, '当前位置');
+        if (cur) results.push(cur);
+      } else {
+        const kho = await fetchWeather(22.6273, 120.3014, '高雄');
+        if (kho) results.push(kho);
+      }
+      
+      setWeather(results);
+      setLoading(false);
+    };
+
+    // Initial load without location
+    loadAllWeather();
+
+    if ("geolocation" in navigator) {
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          loadAllWeather(latitude, longitude);
+        },
+        (error) => {
+          console.warn("Geolocation denied or failed, falling back to default.", error);
+        },
+        { enableHighAccuracy: false, maximumAge: 300000, timeout: 10000 }
+      );
+    }
+
+    return () => {
+      if (watchId !== undefined) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
   }, []);
 
   if (loading) return <div className="flex items-center gap-2 text-gray-400 text-xs"><Loader2 className="w-3 h-3 animate-spin" /> 获取天气中...</div>;

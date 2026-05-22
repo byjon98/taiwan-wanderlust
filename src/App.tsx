@@ -129,7 +129,7 @@ export default function App() {
   "lng": "该店的精准经度(数字，例如 121.564。不要回答不知道或0，尽全力根据区位估算)"
 }`;
 
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('GEMINI_API_KEY');
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('GEMINI_API_KEY') || "AIzaSyAUo0vq-c9j7bkzTOYzr3RlEYrSRFbq3Uo";
     if (!apiKey) {
       const key = window.prompt("请输入您的 Gemini API Key (仅保存在本地)：");
       if (!key) {

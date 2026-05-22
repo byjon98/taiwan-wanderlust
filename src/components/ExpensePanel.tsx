@@ -627,15 +627,20 @@ export default function ExpensePanel() {
                       <div>
                         <div className="text-[8px] font-bold text-gray-400 uppercase tracking-wider mb-1">起始可用</div>
                         <div className="text-xs font-black text-gray-800">NT$ {Math.round(currentStat.budget).toLocaleString()}</div>
+                        <div className="text-[9px] text-gray-400 font-medium">RM {Math.round(currentStat.budget * exchangeRate).toLocaleString()}</div>
                       </div>
                       <div className="border-x border-gray-200">
                         <div className="text-[8px] font-bold text-gray-400 uppercase tracking-wider mb-1">今日已用</div>
                         <div className="text-xs font-black text-amber-600">NT$ {Math.round(currentStat.spent).toLocaleString()}</div>
+                        <div className="text-[9px] text-amber-600/80 font-medium">RM {Math.round(currentStat.spent * exchangeRate).toLocaleString()}</div>
                       </div>
                       <div>
                         <div className="text-[8px] font-bold text-gray-400 uppercase tracking-wider mb-1">今日结余</div>
                         <div className={cn("text-xs font-black", isOverspent ? "text-rose-500" : "text-emerald-600")}>
                           NT$ {Math.round(currentStat.remaining).toLocaleString()}
+                        </div>
+                        <div className={cn("text-[9px] font-medium", isOverspent ? "text-rose-500/80" : "text-emerald-600/80")}>
+                          RM {Math.round(currentStat.remaining * exchangeRate).toLocaleString()}
                         </div>
                       </div>
                     </div>
@@ -643,8 +648,8 @@ export default function ExpensePanel() {
                     {/* Progress Bar */}
                     <div className="space-y-1">
                       <div className="flex justify-between text-[9px] font-bold text-gray-500">
-                        <span>日支出燃烧率</span>
-                        <span>{currentStat.budget > 0 ? Math.round((currentStat.spent / currentStat.budget) * 100) : 0}%</span>
+                        <span>日支出燃烧率 ({currentStat.budget > 0 ? Math.round((currentStat.spent / currentStat.budget) * 100) : 0}%)</span>
+                        <span>RM {Math.round(currentStat.spent * exchangeRate)} / RM {Math.round(currentStat.budget * exchangeRate)}</span>
                       </div>
                       <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
                         <div 
@@ -901,13 +906,31 @@ export default function ExpensePanel() {
                       return (
                         <tr key={dayStat.day} className="hover:bg-gray-50/50">
                           <td className="p-2.5 font-bold text-gray-700">Day {dayStat.day}</td>
-                          <td className="p-2.5 text-gray-600 font-mono">NT$ {Math.round(dayStat.budget).toLocaleString()}</td>
-                          <td className="p-2.5 font-bold text-amber-600 font-mono">NT$ {Math.round(dayStat.spent).toLocaleString()}</td>
-                          <td className={cn("p-2.5 font-bold font-mono", isNeg ? "text-red-500" : "text-emerald-600")}>
-                            {dayStat.remaining >= 0 ? '+' : ''}{Math.round(dayStat.remaining).toLocaleString()}
+                          <td className="p-2.5 text-gray-600 font-mono">
+                            <div>NT$ {Math.round(dayStat.budget).toLocaleString()}</div>
+                            <div className="text-[9px] text-gray-400 font-medium font-sans">RM {Math.round(dayStat.budget * exchangeRate).toLocaleString()}</div>
+                          </td>
+                          <td className="p-2.5 font-bold text-amber-600 font-mono">
+                            <div>NT$ {Math.round(dayStat.spent).toLocaleString()}</div>
+                            <div className="text-[9px] text-amber-600/80 font-medium font-sans">RM {Math.round(dayStat.spent * exchangeRate).toLocaleString()}</div>
                           </td>
                           <td className={cn("p-2.5 font-bold font-mono", isNeg ? "text-red-500" : "text-emerald-600")}>
-                            {dayStat.day === 10 ? '结清' : `NT$ ${Math.round(dayStat.rollover).toLocaleString()}`}
+                            <div>{dayStat.remaining >= 0 ? '+' : ''}{Math.round(dayStat.remaining).toLocaleString()}</div>
+                            <div className={cn("text-[9px] font-medium font-sans", isNeg ? "text-red-400" : "text-emerald-500")}>
+                              {dayStat.remaining >= 0 ? '+' : ''}RM {Math.round(dayStat.remaining * exchangeRate).toLocaleString()}
+                            </div>
+                          </td>
+                          <td className={cn("p-2.5 font-bold font-mono", isNeg ? "text-red-500" : "text-emerald-600")}>
+                            {dayStat.day === 10 ? (
+                              <div>结清</div>
+                            ) : (
+                              <>
+                                <div>NT$ {Math.round(dayStat.rollover).toLocaleString()}</div>
+                                <div className={cn("text-[9px] font-medium font-sans", isNeg ? "text-red-400" : "text-emerald-500")}>
+                                  RM {Math.round(dayStat.rollover * exchangeRate).toLocaleString()}
+                                </div>
+                              </>
+                            )}
                           </td>
                         </tr>
                       );

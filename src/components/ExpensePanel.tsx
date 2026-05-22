@@ -826,7 +826,7 @@ export default function ExpensePanel() {
             <div className="bg-white rounded-2xl p-6 border border-gray-200 h-80 flex flex-col">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                  <Flame className="w-5 h-5 text-orange-500" /> 每日燃烧率 (TWD等值)
+                  <Flame className="w-5 h-5 text-orange-500" /> 每日燃烧率 (TWD / MYR等值)
                 </h3>
                 <span className="text-[10px] font-bold text-gray-400">已细化到全类目 (鼠标悬停看明细)</span>
               </div>
@@ -841,8 +841,13 @@ export default function ExpensePanel() {
                   
                   return (
                     <div key={day} className="flex flex-col items-center flex-1 h-full justify-end group relative">
-                      <div className="text-[9px] font-black text-gray-600 mb-1 text-center -mt-4 whitespace-nowrap">
-                        {totalSpent > 0 ? totalSpent.toLocaleString(undefined, {maximumFractionDigits:0}) : ''}
+                      <div className="text-[9px] font-black text-gray-600 -mt-7 mb-1 text-center whitespace-nowrap flex flex-col items-center leading-tight">
+                        {totalSpent > 0 ? (
+                          <>
+                            <span>{totalSpent.toLocaleString(undefined, {maximumFractionDigits:0})}</span>
+                            <span className="text-[7.5px] text-gray-400 font-bold">RM {Math.round(totalSpent * exchangeRate).toLocaleString()}</span>
+                          </>
+                        ) : ''}
                       </div>
                       <div className="w-full max-w-[24px] bg-gray-50 rounded-t-md flex flex-col justify-end overflow-hidden relative" style={{ height: '100%' }}>
                         <div className="w-full flex flex-col justify-end" style={{ height: `${heightPct}%` }}>
@@ -853,7 +858,7 @@ export default function ExpensePanel() {
                                 key={catId} 
                                 style={{ height: `${segmentPct}%`, backgroundColor: getCategoryColor(catId) }} 
                                 className="w-full" 
-                                title={`${getCategoryLabel(catId)}: NT$ ${Math.round(amount).toLocaleString()}`}
+                                title={`${getCategoryLabel(catId)}: NT$ ${Math.round(amount).toLocaleString()} / RM ${Math.round(amount * exchangeRate).toLocaleString()}`}
                               />
                             );
                           })}

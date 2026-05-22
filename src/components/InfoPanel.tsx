@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useFirestoreSync } from '../hooks/useFirestoreSync';
-import { AlertTriangle, Plane, Train, CheckCircle2, Circle, Navigation, Plus, X, ShoppingBag, Gift, Sparkles, Package, Coffee, Brush, Heart, Footprints, User, Store, Utensils, ChevronRight, ExternalLink, MapPin, Clock, Tag, MessageSquare, Info, Eye, RotateCcw, RotateCw, Trash2, Undo2, Redo2, Smartphone, Cpu } from 'lucide-react';
+import { AlertTriangle, Plane, Train, CheckCircle2, Circle, Navigation, Plus, X, ShoppingBag, Gift, Sparkles, Package, Coffee, Brush, Heart, Footprints, User, Store, Utensils, ChevronRight, ExternalLink, MapPin, Clock, Tag, MessageSquare, Info, Eye, RotateCcw, RotateCw, Trash2, Undo2, Redo2, Smartphone, Cpu, Edit2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-import { souvenirModules as rawSouvenirModules, groceryModules as rawGroceryModules, packingList as defaultPackingList } from '../data/info';
+import { souvenirModules as rawSouvenirModules, groceryModules as rawGroceryModules, packingList as defaultPackingList, InfoModule, InfoItem } from '../data/info';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -33,10 +33,45 @@ const INITIAL_PACKING_LIST = defaultPackingList.map(cat => ({
   }))
 }));
 
+const INITIAL_SOUVENIRS = rawSouvenirModules.map(module => ({
+  ...module,
+  items: module.items.map((item, i) => ({
+    ...item,
+    id: `souvenir-${module.id}-${i}`
+  }))
+}));
+
+const INITIAL_GROCERIES = rawGroceryModules.map(module => ({
+  ...module,
+  items: module.items.map((item, i) => ({
+    ...item,
+    id: `grocery-${module.id}-${i}`
+  }))
+}));
+
 export default function InfoPanel() {
   const [activeTab, setActiveTab] = useState<'logistics' | 'souvenirs' | 'grocery' | 'packing'>('logistics');
   const [expandedModule, setExpandedModule] = useState<string | null>(null);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
+
+  // Global Edit Mode for Travel Info
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  // Reset Edit Mode when activeTab changes
+  useEffect(() => {
+    setIsEditMode(false);
+  }, [activeTab]);
+
+  // Edit Modal State
+  const [editorModal, setEditorModal] = useState<{
+    isOpen: boolean;
+    moduleId: string;
+    item: any | null;
+  }>({
+    isOpen: false,
+    moduleId: '',
+    item: null
+  });
 
   // Packing List State
   const [userPackingList, setUserPackingList] = useFirestoreSync<StatefulPackingCategory[]>('packing', 'taiwan_trip_packing_v1', INITIAL_PACKING_LIST);
@@ -44,6 +79,236 @@ export default function InfoPanel() {
   const [future, setFuture] = useState<StatefulPackingCategory[][]>([]);
   const [newPackingItems, setNewPackingItems] = useState<Record<number, string>>({});
   const [isPolicyOpen, setIsPolicyOpen] = useState(false);
+
+  // Souvenirs & Groceries State synced via useFirestoreSync
+  const [souvenirDataRaw, setSouvenirData] = useFirestoreSync<InfoModule[]>('souvenirs', 'taiwan_trip_souvenirs_v1', INITIAL_SOUVENIRS);
+  const [groceryDataRaw, setGroceryData] = useFirestoreSync<InfoModule[]>('grocery', 'taiwan_trip_grocery_v1', INITIAL_GROCERIES);
+
+  // Souvenirs & Groceries History states
+  const [souvenirHistory, setSouvenirHistory] = useState<InfoModule[][]>([]);
+  const [souvenirFuture, setSouvenirFuture] = useState<InfoModule[][]>([]);
+  const [groceryHistory, setGroceryHistory] = useState<InfoModule[][]>([]);
+  const [groceryFuture, setGroceryFuture] = useState<InfoModule[][]>([]);
+
+  // Guarantee every item has an ID runtime-safely
+  const souvenirData = souvenirDataRaw.map((module) => ({
+    ...module,
+    items: module.items.map((item: any, i: number) => ({
+      ...item,
+      id: item.id || `souvenir-${module.id}-${i}`
+    }))
+  }));
+
+  const groceryData = groceryDataRaw.map((module) => ({
+    ...module,
+    items: module.items.map((item: any, i: number) => ({
+      ...item,
+      id: item.id || `grocery-${module.id}-${i}`
+    }))
+  }));
+
+  // Souvenir History Helpers
+  const updateSouvenirsWithHistory = (newList: InfoModule[]) => {
+    setSouvenirHistory(prev => [...prev.slice(-49), souvenirData]);
+    setSouvenirFuture([]);
+    setSouvenirData(newList);
+  };
+
+  const undoSouvenirs = () => {
+    if (souvenirHistory.length === 0) return;
+    const previous = souvenirHistory[souvenirHistory.length - 1];
+    setSouvenirFuture(prev => [souvenirData, ...prev]);
+    setSouvenirHistory(prev => prev.slice(0, -1));
+    setSouvenirData(previous);
+  };
+
+  const redoSouvenirs = () => {
+    if (souvenirFuture.length === 0) return;
+    const next = souvenirFuture[0];
+    setSouvenirHistory(prev => [...prev, souvenirData]);
+    setSouvenirFuture(prev => prev.slice(1));
+    setSouvenirData(next);
+  };
+
+  const resetSouvenirs = () => {
+    if (confirm('确定要重置所有伴手礼数据到默认吗？')) {
+      setSouvenirHistory(prev => [...prev.slice(-49), souvenirData]);
+      setSouvenirFuture([]);
+      setSouvenirData(INITIAL_SOUVENIRS);
+    }
+  };
+
+  // Grocery History Helpers
+  const updateGroceryWithHistory = (newList: InfoModule[]) => {
+    setGroceryHistory(prev => [...prev.slice(-49), groceryData]);
+    setGroceryFuture([]);
+    setGroceryData(newList);
+  };
+
+  const undoGrocery = () => {
+    if (groceryHistory.length === 0) return;
+    const previous = groceryHistory[groceryHistory.length - 1];
+    setGroceryFuture(prev => [groceryData, ...prev]);
+    setGroceryHistory(prev => prev.slice(0, -1));
+    setGroceryData(previous);
+  };
+
+  const redoGrocery = () => {
+    if (groceryFuture.length === 0) return;
+    const next = groceryFuture[0];
+    setGroceryHistory(prev => [...prev, groceryData]);
+    setGroceryFuture(prev => prev.slice(1));
+    setGroceryData(next);
+  };
+
+  const resetGrocery = () => {
+    if (confirm('确定要重置所有超市便利店数据到默认吗？')) {
+      setGroceryHistory(prev => [...prev.slice(-49), groceryData]);
+      setGroceryFuture([]);
+      setGroceryData(INITIAL_GROCERIES);
+    }
+  };
+
+  // Delete Item handler
+  const handleDeleteItem = (moduleId: string, itemId: string) => {
+    if (!confirm('确定要删除这个项目吗？')) return;
+
+    if (activeTab === 'souvenirs') {
+      const newList = souvenirData.map(m => {
+        if (m.id !== moduleId) return m;
+        return {
+          ...m,
+          items: m.items.filter((item: any) => item.id !== itemId)
+        };
+      });
+      updateSouvenirsWithHistory(newList);
+    } else {
+      const newList = groceryData.map(m => {
+        if (m.id !== moduleId) return m;
+        return {
+          ...m,
+          items: m.items.filter((item: any) => item.id !== itemId)
+        };
+      });
+      updateGroceryWithHistory(newList);
+    }
+  };
+
+  // Edit / Add Item callbacks
+  const handleOpenEditItem = (moduleId: string, item: any) => {
+    setEditorModal({
+      isOpen: true,
+      moduleId,
+      item
+    });
+  };
+
+  const handleOpenAddItem = (moduleId: string) => {
+    setEditorModal({
+      isOpen: true,
+      moduleId,
+      item: null
+    });
+  };
+
+  const handleSaveItem = (itemData: any) => {
+    const { moduleId, item } = editorModal;
+
+    if (activeTab === 'souvenirs') {
+      let newList;
+      if (item) {
+        // Edit existing item
+        newList = souvenirData.map(m => {
+          if (m.id !== moduleId) return m;
+          return {
+            ...m,
+            items: m.items.map((it: any) => it.id === item.id ? { ...it, ...itemData } : it)
+          };
+        });
+      } else {
+        // Add new item
+        const newItem = {
+          ...itemData,
+          id: `souvenir-item-${Date.now()}-${Math.random()}`
+        };
+        newList = souvenirData.map(m => {
+          if (m.id !== moduleId) return m;
+          return {
+            ...m,
+            items: [...m.items, newItem]
+          };
+        });
+      }
+      updateSouvenirsWithHistory(newList);
+    } else {
+      let newList;
+      if (item) {
+        // Edit existing item
+        newList = groceryData.map(m => {
+          if (m.id !== moduleId) return m;
+          return {
+            ...m,
+            items: m.items.map((it: any) => it.id === item.id ? { ...it, ...itemData } : it)
+          };
+        });
+      } else {
+        // Add new item
+        const newItem = {
+          ...itemData,
+          id: `grocery-item-${Date.now()}-${Math.random()}`
+        };
+        newList = groceryData.map(m => {
+          if (m.id !== moduleId) return m;
+          return {
+            ...m,
+            items: [...m.items, newItem]
+          };
+        });
+      }
+      updateGroceryWithHistory(newList);
+    }
+
+    setEditorModal({ isOpen: false, moduleId: '', item: null });
+  };
+
+  // Edit category/module handler
+  const handleEditModule = (moduleId: string) => {
+    const modules = activeTab === 'souvenirs' ? souvenirData : groceryData;
+    const module = modules.find(m => m.id === moduleId);
+    if (!module) return;
+
+    const newName = prompt('请输入新分类名称：', module.name);
+    if (newName === null) return;
+    if (!newName.trim()) {
+      alert('分类名称不能为空');
+      return;
+    }
+
+    const newDesc = prompt('请输入新分类描述：', module.desc);
+    if (newDesc === null) return;
+
+    if (activeTab === 'souvenirs') {
+      const newList = souvenirData.map(m => {
+        if (m.id !== moduleId) return m;
+        return {
+          ...m,
+          name: newName.trim(),
+          desc: newDesc.trim()
+        };
+      });
+      updateSouvenirsWithHistory(newList);
+    } else {
+      const newList = groceryData.map(m => {
+        if (m.id !== moduleId) return m;
+        return {
+          ...m,
+          name: newName.trim(),
+          desc: newDesc.trim()
+        };
+      });
+      updateGroceryWithHistory(newList);
+    }
+  };
 
   // Helper to update state with history
   const updateWithHistory = (newList: StatefulPackingCategory[]) => {
@@ -290,7 +555,7 @@ export default function InfoPanel() {
   };
 
   // Map icons back to the modules
-  const souvenirModules = rawSouvenirModules.map(m => {
+  const souvenirModules = souvenirData.map(m => {
     let icon;
     switch(m.id) {
       case 'food': icon = <Utensils className="w-5 h-5 text-orange-500" />; break;
@@ -308,7 +573,7 @@ export default function InfoPanel() {
     return { ...m, icon };
   });
 
-  const groceryModules = rawGroceryModules.map(m => {
+  const groceryModules = groceryData.map(m => {
     let icon;
     switch(m.id) {
       case 'store_711':
@@ -658,6 +923,59 @@ export default function InfoPanel() {
             </div>
           </div>
 
+          {/* Premium Control Bar */}
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <h4 className="font-black text-gray-800 text-sm flex items-center gap-1.5">
+              🌸 伴手礼清单
+            </h4>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={undoSouvenirs}
+                disabled={souvenirHistory.length === 0}
+                className={cn(
+                  "flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-bold transition-all border",
+                  souvenirHistory.length === 0
+                    ? "bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed"
+                    : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-800"
+                )}
+                title="撤销"
+              >
+                <Undo2 className="w-3 h-3" /> 撤销
+              </button>
+              <button
+                onClick={redoSouvenirs}
+                disabled={souvenirFuture.length === 0}
+                className={cn(
+                  "flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-bold transition-all border",
+                  souvenirFuture.length === 0
+                    ? "bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed"
+                    : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-800"
+                )}
+                title="重做"
+              >
+                <Redo2 className="w-3 h-3" /> 重做
+              </button>
+              <button
+                onClick={() => setIsEditMode(!isEditMode)}
+                className={cn(
+                  "flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-bold transition-all border shadow-sm",
+                  isEditMode
+                    ? "bg-orange-500 text-white border-orange-500 hover:bg-orange-600"
+                    : "bg-white text-orange-600 border-orange-200 hover:bg-orange-50"
+                )}
+              >
+                {isEditMode ? '退出编辑' : '编辑模式'}
+              </button>
+              <button
+                onClick={resetSouvenirs}
+                className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                title="重置默认"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-4">
             {souvenirModules.map(module => (
               <ModuleCard 
@@ -667,6 +985,11 @@ export default function InfoPanel() {
                 setExpandedModule={setExpandedModule}
                 expandedItem={expandedItem}
                 setExpandedItem={setExpandedItem}
+                isEditMode={isEditMode}
+                onEditItem={handleOpenEditItem}
+                onDeleteItem={handleDeleteItem}
+                onAddItem={handleOpenAddItem}
+                onEditModule={handleEditModule}
               />
             ))}
           </div>
@@ -689,6 +1012,59 @@ export default function InfoPanel() {
             </div>
           </div>
 
+          {/* Premium Control Bar */}
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <h4 className="font-black text-gray-800 text-sm flex items-center gap-1.5">
+              🛒 超市便利店清单
+            </h4>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={undoGrocery}
+                disabled={groceryHistory.length === 0}
+                className={cn(
+                  "flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-bold transition-all border",
+                  groceryHistory.length === 0
+                    ? "bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed"
+                    : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-800"
+                )}
+                title="撤销"
+              >
+                <Undo2 className="w-3 h-3" /> 撤销
+              </button>
+              <button
+                onClick={redoGrocery}
+                disabled={groceryFuture.length === 0}
+                className={cn(
+                  "flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-bold transition-all border",
+                  groceryFuture.length === 0
+                    ? "bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed"
+                    : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-800"
+                )}
+                title="重做"
+              >
+                <Redo2 className="w-3 h-3" /> 重做
+              </button>
+              <button
+                onClick={() => setIsEditMode(!isEditMode)}
+                className={cn(
+                  "flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-bold transition-all border shadow-sm",
+                  isEditMode
+                    ? "bg-green-600 text-white border-green-600 hover:bg-green-700"
+                    : "bg-white text-green-600 border-green-200 hover:bg-green-50"
+                )}
+              >
+                {isEditMode ? '退出编辑' : '编辑模式'}
+              </button>
+              <button
+                onClick={resetGrocery}
+                className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                title="重置默认"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-4">
             {groceryModules.map(module => (
               <ModuleCard 
@@ -698,6 +1074,11 @@ export default function InfoPanel() {
                 setExpandedModule={setExpandedModule}
                 expandedItem={expandedItem}
                 setExpandedItem={setExpandedItem}
+                isEditMode={isEditMode}
+                onEditItem={handleOpenEditItem}
+                onDeleteItem={handleDeleteItem}
+                onAddItem={handleOpenAddItem}
+                onEditModule={handleEditModule}
               />
             ))}
           </div>
@@ -871,7 +1252,18 @@ export default function InfoPanel() {
   );
 }
 
-function ModuleCard({ module, expandedModule, setExpandedModule, expandedItem, setExpandedItem }: any) {
+function ModuleCard({ 
+  module, 
+  expandedModule, 
+  setExpandedModule, 
+  expandedItem, 
+  setExpandedItem,
+  isEditMode,
+  onEditItem,
+  onDeleteItem,
+  onAddItem,
+  onEditModule
+}: any) {
   return (
     <div className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all">
       <button 
@@ -883,7 +1275,21 @@ function ModuleCard({ module, expandedModule, setExpandedModule, expandedItem, s
             {module.icon}
           </div>
           <div>
-            <div className="font-black text-lg text-gray-800 tracking-tight">{module.name}</div>
+            <div className="font-black text-lg text-gray-800 tracking-tight flex items-center gap-2">
+              {module.name}
+              {isEditMode && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditModule(module.id);
+                  }}
+                  className="p-1 text-gray-400 hover:text-indigo-600 hover:bg-gray-100 rounded transition-colors"
+                  title="重命名分类"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
             <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">{module.desc}</div>
           </div>
         </div>
@@ -895,9 +1301,9 @@ function ModuleCard({ module, expandedModule, setExpandedModule, expandedItem, s
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
             {module.items.map((item: any, idx: number) => (
               <div 
-                key={idx} 
+                key={item.id || idx} 
                 className={cn(
-                  "group cursor-pointer rounded-2xl p-4 border transition-all",
+                  "group cursor-pointer rounded-2xl p-4 border transition-all relative overflow-hidden",
                   expandedItem === `${module.id}-${idx}` 
                     ? "bg-indigo-50 border-indigo-200" 
                     : "bg-gray-50 border-transparent hover:bg-white hover:border-gray-200 shadow-sm"
@@ -905,13 +1311,41 @@ function ModuleCard({ module, expandedModule, setExpandedModule, expandedItem, s
                 onClick={() => setExpandedItem(expandedItem === `${module.id}-${idx}` ? null : `${module.id}-${idx}`)}
               >
                 <div className="flex justify-between items-start">
-                  <div className="flex-1">
+                  <div className="flex-1 pr-16">
                     <div className="font-bold text-gray-800 group-hover:text-indigo-600 transition-colors flex items-center gap-2">
                       {item.n}
                       <ChevronRight className={cn("w-3 h-3 transition-transform", expandedItem === `${module.id}-${idx}` ? "rotate-90 text-indigo-400" : "text-gray-300")} />
                     </div>
                     <div className="text-xs text-gray-500 mt-1 leading-relaxed">{item.d}</div>
                   </div>
+
+                  {isEditMode && (
+                    <div 
+                      className="absolute right-3 top-3 flex items-center gap-1.5 z-10" 
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditItem(module.id, item);
+                        }}
+                        className="p-1.5 bg-white border border-gray-100 hover:border-indigo-100 text-gray-400 hover:text-indigo-600 rounded-xl shadow-sm hover:shadow transition-all"
+                        title="编辑"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteItem(module.id, item.id);
+                        }}
+                        className="p-1.5 bg-white border border-gray-100 hover:border-red-100 text-gray-400 hover:text-red-500 rounded-xl shadow-sm hover:shadow transition-all"
+                        title="删除"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {expandedItem === `${module.id}-${idx}` && (
@@ -933,24 +1367,30 @@ function ModuleCard({ module, expandedModule, setExpandedModule, expandedItem, s
                     <div className="grid grid-cols-2 gap-3">
                       <div className="bg-white/60 p-3 rounded-xl border border-indigo-50">
                         <div className="text-[9px] font-black text-indigo-300 uppercase tracking-widest mb-1 flex items-center gap-1"><Tag className="w-2.5 h-2.5" /> 价格参考 (Price)</div>
-                        <p className="text-[11px] text-indigo-900 leading-relaxed font-bold">{item.price}</p>
+                        <p className="text-[11px] text-indigo-900 leading-relaxed font-bold">{item.price || '暂无报价'}</p>
                       </div>
                       <div className="bg-white/60 p-3 rounded-xl border border-indigo-50">
                         <div className="text-[9px] font-black text-indigo-300 uppercase tracking-widest mb-1 flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> 营业时间 (Hours)</div>
-                        <p className="text-[11px] text-indigo-900 leading-relaxed font-bold">{item.hours}</p>
+                        <p className="text-[11px] text-indigo-900 leading-relaxed font-bold">{item.hours || '暂无时间'}</p>
                       </div>
-                      <div className="col-span-2 bg-white/60 p-3 rounded-xl border border-indigo-50">
-                        <div className="text-[9px] font-black text-indigo-300 uppercase tracking-widest mb-1 flex items-center gap-1"><ShoppingBag className="w-2.5 h-2.5" /> 必买推荐 (Buy)</div>
-                        <p className="text-[11px] text-indigo-900 leading-relaxed font-medium whitespace-pre-wrap">{item.buy}</p>
-                      </div>
-                      <div className="col-span-2 bg-white/60 p-3 rounded-xl border border-indigo-50">
-                        <div className="text-[9px] font-black text-indigo-300 uppercase tracking-widest mb-1 flex items-center gap-1"><Sparkles className="w-2.5 h-2.5" /> 必去体验 (Do)</div>
-                        <p className="text-[11px] text-indigo-900 leading-relaxed font-medium whitespace-pre-wrap">{item.do}</p>
-                      </div>
-                      <div className="col-span-2 bg-white/60 p-3 rounded-xl border border-indigo-50">
-                        <div className="text-[9px] font-black text-indigo-300 uppercase tracking-widest mb-1 flex items-center gap-1"><MessageSquare className="w-2.5 h-2.5" /> 网络评价 (Review)</div>
-                        <p className="text-[11px] text-indigo-900 leading-relaxed italic">{item.eval}</p>
-                      </div>
+                      {item.buy && (
+                        <div className="col-span-2 bg-white/60 p-3 rounded-xl border border-indigo-50">
+                          <div className="text-[9px] font-black text-indigo-300 uppercase tracking-widest mb-1 flex items-center gap-1"><ShoppingBag className="w-2.5 h-2.5" /> 必买推荐 (Buy)</div>
+                          <p className="text-[11px] text-indigo-900 leading-relaxed font-medium whitespace-pre-wrap">{item.buy}</p>
+                        </div>
+                      )}
+                      {item.do && (
+                        <div className="col-span-2 bg-white/60 p-3 rounded-xl border border-indigo-50">
+                          <div className="text-[9px] font-black text-indigo-300 uppercase tracking-widest mb-1 flex items-center gap-1"><Sparkles className="w-2.5 h-2.5" /> 必去体验 (Do)</div>
+                          <p className="text-[11px] text-indigo-900 leading-relaxed font-medium whitespace-pre-wrap">{item.do}</p>
+                        </div>
+                      )}
+                      {item.eval && (
+                        <div className="col-span-2 bg-white/60 p-3 rounded-xl border border-indigo-50">
+                          <div className="text-[9px] font-black text-indigo-300 uppercase tracking-widest mb-1 flex items-center gap-1"><MessageSquare className="w-2.5 h-2.5" /> 网络评价 (Review)</div>
+                          <p className="text-[11px] text-indigo-900 leading-relaxed italic">{item.eval}</p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Tips */}
@@ -967,6 +1407,22 @@ function ModuleCard({ module, expandedModule, setExpandedModule, expandedItem, s
                 )}
               </div>
             ))}
+
+            {isEditMode && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddItem(module.id);
+                }}
+                className="group flex flex-col items-center justify-center border-2 border-dashed border-gray-200 hover:border-indigo-400 rounded-2xl p-6 bg-white hover:bg-indigo-50/20 transition-all text-center h-full min-h-[120px]"
+              >
+                <div className="p-2.5 bg-gray-50 group-hover:bg-indigo-50 rounded-xl transition-all border border-gray-100 group-hover:border-indigo-100 text-gray-400 group-hover:text-indigo-600 mb-2">
+                  <Plus className="w-4 h-4" />
+                </div>
+                <div className="font-bold text-xs text-gray-500 group-hover:text-indigo-600 transition-colors">添加新项目</div>
+                <div className="text-[10px] text-gray-400 mt-0.5">为该分类添加自定义旅游资讯</div>
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -994,7 +1450,220 @@ function SouvenirTips() {
           <div className="text-[10px] text-white/50 tracking-tighter">RM 1 ≈ NT$ 7.58</div>
         </div>
       </div>
+    </div>
+  );
+}
 
+function ItemEditorModal({ item, onClose, onSave }: { item: any | null; onClose: () => void; onSave: (data: any) => void }) {
+  const [name, setName] = useState(item?.n || '');
+  const [desc, setDesc] = useState(item?.d || '');
+  const [price, setPrice] = useState(item?.price || '');
+  const [hours, setHours] = useState(item?.hours || '');
+  const [buy, setBuy] = useState(item?.buy || '');
+  const [doExp, setDoExp] = useState(item?.do || '');
+  const [evalStr, setEvalStr] = useState(item?.eval || '');
+  const [tip, setTip] = useState(item?.tip || '');
+  const [link, setLink] = useState(item?.link || '');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      alert('项目名称不能为空');
+      return;
+    }
+    onSave({
+      n: name.trim(),
+      d: desc.trim(),
+      price: price.trim(),
+      hours: hours.trim(),
+      buy: buy.trim(),
+      do: doExp.trim(),
+      eval: evalStr.trim(),
+      tip: tip.trim(),
+      link: link.trim()
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div 
+        className="bg-white w-full max-w-2xl rounded-[32px] overflow-hidden shadow-2xl border border-gray-100 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-8 py-6 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-black text-gray-800 tracking-tight">
+              {item ? '📝 编辑项目资讯' : '✨ 添加新项目'}
+            </h3>
+            <p className="text-xs text-gray-500 mt-1">
+              {item ? `正在修改 ${item.n} 的详细旅游攻略` : '为你的台湾行程增添自定义吃喝玩乐推荐'}
+            </p>
+          </div>
+          <button 
+            onClick={onClose}
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Form Container */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+          
+          {/* Section 1: Basic Info */}
+          <div className="space-y-4">
+            <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">基本信息 (Basic Info)</h4>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1.5 flex items-center gap-1">
+                  项目名称 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="如：微热山丘凤梨酥"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-medium focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all placeholder:text-gray-400 text-gray-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1.5 flex items-center gap-1">
+                  简短描述
+                </label>
+                <input
+                  type="text"
+                  placeholder="如：超人气土凤梨酥，附免费奉茶体验"
+                  value={desc}
+                  onChange={e => setDesc(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-medium focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all placeholder:text-gray-400 text-gray-800"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1.5 flex items-center gap-1">
+                  <Tag className="w-3.5 h-3.5 text-indigo-400" /> 价格参考 (Price)
+                </label>
+                <input
+                  type="text"
+                  placeholder="如：NT$420 / 盒 (10个装)"
+                  value={price}
+                  onChange={e => setPrice(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-medium focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all placeholder:text-gray-400 text-gray-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1.5 flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-indigo-400" /> 营业时间 (Hours)
+                </label>
+                <input
+                  type="text"
+                  placeholder="如：10:00 - 20:00 (无休)"
+                  value={hours}
+                  onChange={e => setHours(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-medium focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all placeholder:text-gray-400 text-gray-800"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Detailed Guide */}
+          <div className="space-y-4 pt-2 border-t border-gray-50">
+            <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">深度攻略 (Travel Guide)</h4>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1.5 flex items-center gap-1">
+                  <ShoppingBag className="w-3.5 h-3.5 text-indigo-400" /> 必买推荐 / 特色介绍 (What to Buy)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="推荐购买什么口味、规格或特产详情..."
+                  value={buy}
+                  onChange={e => setBuy(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-medium focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all placeholder:text-gray-400 text-gray-800 resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1.5 flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" /> 必去体验 / 玩法推荐 (What to Do)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="如何获得最佳体验、避坑玩法或点单攻略..."
+                  value={doExp}
+                  onChange={e => setDoExp(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-medium focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all placeholder:text-gray-400 text-gray-800 resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1.5 flex items-center gap-1">
+                  <MessageSquare className="w-3.5 h-3.5 text-indigo-400" /> 网络评价 / 口碑 (Reviews)
+                </label>
+                <input
+                  type="text"
+                  placeholder="如：台北凤梨酥天花板，皮酥馅酸甜，茶香极浓"
+                  value={evalStr}
+                  onChange={e => setEvalStr(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-medium focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all placeholder:text-gray-400 text-gray-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1.5 flex items-center gap-1">
+                  <Info className="w-3.5 h-3.5 text-amber-500" /> 内部贴心建议 (Tips)
+                </label>
+                <input
+                  type="text"
+                  placeholder="如：民生社区店可以免费喝茶吃一整块凤梨酥，建议下午去"
+                  value={tip}
+                  onChange={e => setTip(e.target.value)}
+                  className="w-full px-4 py-3 bg-amber-50/40 border border-amber-100/50 rounded-2xl text-xs font-medium focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all placeholder:text-gray-400 text-gray-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1.5 flex items-center gap-1">
+                  <ExternalLink className="w-3.5 h-3.5 text-indigo-400" /> 官方链接 / 参考网址 (Link)
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  value={link}
+                  onChange={e => setLink(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-medium focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all placeholder:text-gray-400 text-gray-800"
+                />
+              </div>
+            </div>
+          </div>
+        </form>
+
+        {/* Footer */}
+        <div className="px-8 py-5 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2.5 bg-white border border-gray-200 rounded-2xl text-xs font-black text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:scale-95 transition-all"
+          >
+            取消
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 rounded-2xl text-xs font-black text-white shadow-md shadow-indigo-100 hover:shadow-lg transition-all"
+          >
+            保存项目
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

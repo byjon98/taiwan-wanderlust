@@ -10,6 +10,18 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const BUDGET_INCLUDED_CATEGORIES = [
+  'nightmarket', // 夜市小吃
+  'restaurant',  // 正餐/餐厅
+  'drinks',      // 甜点与饮品
+  'convenience', // 超商/超市补给
+  'uber',        // Uber / 计程车
+  'bus',         // 客运/公车
+  'transit',     // 捷运 / 游船 / 缆车
+  'medical',     // 医疗保健
+  'misc'         // 洗衣/杂费
+];
+
 export default function ExpensePanel() {
   const [expenses, setExpenses] = useFirestoreSync<Expense[]>('expenses', 'taiwan_trip_expenses_v3', INITIAL_SUNK_COSTS);
   const [exchangeRate, setExchangeRate] = useState<number>(0.145);
@@ -24,6 +36,7 @@ export default function ExpensePanel() {
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [isTopUpOpen, setIsTopUpOpen] = useState(false);
   const [touchStartY, setTouchStartY] = useState(0);
+  const [selectedBudgetDay, setSelectedBudgetDay] = useState<number>(1);
 
   // Quick Entry Fields
   const [entrySubject, setEntrySubject] = useState('');
@@ -55,7 +68,10 @@ export default function ExpensePanel() {
     // Auto calculate current day based on trip start
     const tripStart = new Date('2026-05-23T00:00:00+08:00').getTime();
     const diffDays = Math.floor((Date.now() - tripStart) / (1000 * 60 * 60 * 24)) + 1;
-    if (diffDays >= 1 && diffDays <= 10) setEntryDay(diffDays);
+    if (diffDays >= 1 && diffDays <= 10) {
+      setEntryDay(diffDays);
+      setSelectedBudgetDay(diffDays);
+    }
 
     fetch('https://api.exchangerate-api.com/v4/latest/TWD')
       .then(res => res.json())
@@ -166,38 +182,63 @@ export default function ExpensePanel() {
     }, 0);
   }, [filteredExpenses, exchangeRate, searchQuery]);
 
-  // Daily Burn Rate (Vertical) grouped by main category
+  // Daily Budget Rollover stats (TWD)
+  const dailyBudgetStats = useMemo(() => {
+    const dayStats: {
+      day: number;
+      budget: number;
+      spent: number;
+      remaining: number;
+      rollover: number;
+    }[] = [];
+
+    let accumulatedRollover = 0;
+
+    for (let day = 1; day <= 10; day++) {
+      const dayExpenses = expenses.filter(
+        e => e.day === day && 
+        !e.isTransfer && 
+        !e.isSettlement && 
+        BUDGET_INCLUDED_CATEGORIES.includes(e.category)
+      );
+      
+      const spentTwd = dayExpenses.reduce((sum, e) => {
+        const amt = e.currency === 'TWD' ? e.amount : e.amount / exchangeRate;
+        return sum + amt;
+      }, 0);
+
+      const baseBudget = 3000;
+      const totalAvailable = baseBudget + accumulatedRollover;
+      const remaining = totalAvailable - spentTwd;
+      
+      accumulatedRollover = remaining;
+
+      dayStats.push({
+        day,
+        budget: totalAvailable,
+        spent: spentTwd,
+        remaining,
+        rollover: remaining
+      });
+    }
+
+    return dayStats;
+  }, [expenses, exchangeRate]);
+
+  // Daily Burn Rate (Vertical) grouped by category ID
   const dailyBurn = useMemo(() => {
     const days: Record<number, Record<string, number>> = {};
     for(let i = 1; i <= CONSTANTS.TOTAL_DAYS; i++) days[i] = {};
     
     expenses.forEach(e => {
-      if (e.timestamp < 100 || e.isTransfer || e.isSettlement) return; // skip initial sunk costs and transfers
+      if (e.day === 0 || e.isTransfer || e.isSettlement) return; // skip initial sunk costs and transfers
       const amountTwd = e.currency === 'TWD' ? e.amount : e.amount / exchangeRate;
       if (!days[e.day]) days[e.day] = {};
       
-      let groupName = '杂项组';
-      for (const group of CATEGORIES) {
-        if (group.items.some(i => i.id === e.category)) {
-          groupName = group.group;
-          break;
-        }
-      }
-      
-      days[e.day][groupName] = (days[e.day][groupName] || 0) + amountTwd;
+      days[e.day][e.category] = (days[e.day][e.category] || 0) + amountTwd;
     });
     return days;
   }, [expenses, exchangeRate]);
-
-  const getGroupColor = (group: string) => {
-    const colors: Record<string, string> = {
-      '饮食组': '#FF9F43',
-      '交通组': '#546DE5',
-      '采买与伴手礼组': '#cf6a87',
-      '杂项组': '#a4b0be'
-    };
-    return colors[group] || '#d1d8e0';
-  };
 
   // Submit Expense
   const handleSubmit = () => {
@@ -526,6 +567,123 @@ export default function ExpensePanel() {
                 <div className="bg-black h-full rounded-full" style={{ width: `${Math.max(0, (stats.cardRemainingMyr/CONSTANTS.CARD_RESERVE_MYR)*100)}%` }} />
               </div>
             </div>
+
+            {/* Daily Rollover Budget Card */}
+            <div className="bg-gradient-to-br from-[#1e293b] to-[#0f172a] rounded-2xl p-5 border border-slate-800 text-white shadow-xl">
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <Flame className="w-5 h-5 text-amber-400 animate-pulse" />
+                  <div>
+                    <h3 className="font-bold text-sm">每日滚动预算</h3>
+                    <p className="text-[9px] font-bold text-slate-400">日常额度 NT$ 3,000 / 天 (排除大笔消费与预付)</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] bg-indigo-500/20 text-indigo-300 font-bold px-2 py-0.5 rounded-lg border border-indigo-500/30">
+                    Day {selectedBudgetDay}
+                  </span>
+                </div>
+              </div>
+
+              {/* Day selection tabs */}
+              <div className="flex bg-white/5 p-1 rounded-xl w-full mb-4 overflow-x-auto no-scrollbar gap-1">
+                {[...Array(10)].map((_, i) => {
+                  const d = i + 1;
+                  const isSelected = selectedBudgetDay === d;
+                  const dayStat = dailyBudgetStats[i];
+                  const isNeg = dayStat && dayStat.remaining < 0;
+                  
+                  return (
+                    <button 
+                      key={d} 
+                      type="button"
+                      onClick={() => setSelectedBudgetDay(d)} 
+                      className={cn(
+                        "flex-1 min-w-[34px] py-1.5 rounded-lg text-[9px] font-bold transition-all relative flex flex-col items-center", 
+                        isSelected 
+                          ? "bg-white text-slate-900 shadow-sm" 
+                          : "text-slate-400 hover:text-white hover:bg-white/5"
+                      )}
+                    >
+                      <span>D{d}</span>
+                      <span className={cn("text-[7px] mt-0.5 font-bold", isSelected ? "text-indigo-600" : (isNeg ? "text-rose-400" : "text-emerald-400"))}>
+                        {dayStat ? (dayStat.remaining >= 0 ? `+${Math.round(dayStat.remaining)}` : `${Math.round(dayStat.remaining)}`) : ''}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Stats detail */}
+              {(() => {
+                const currentStat = dailyBudgetStats[selectedBudgetDay - 1];
+                if (!currentStat) return null;
+
+                const isOverspent = currentStat.remaining < 0;
+
+                return (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-2 text-center bg-white/5 p-3 rounded-xl border border-white/5">
+                      <div>
+                        <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-1">起始可用</div>
+                        <div className="text-xs font-black">NT$ {Math.round(currentStat.budget).toLocaleString()}</div>
+                      </div>
+                      <div className="border-x border-white/10">
+                        <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-1">今日已用</div>
+                        <div className="text-xs font-black text-amber-300">NT$ {Math.round(currentStat.spent).toLocaleString()}</div>
+                      </div>
+                      <div>
+                        <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-1">今日结余</div>
+                        <div className={cn("text-xs font-black", isOverspent ? "text-rose-400" : "text-emerald-400")}>
+                          NT$ {Math.round(currentStat.remaining).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[9px] font-bold text-slate-300">
+                        <span>日支出燃烧率</span>
+                        <span>{currentStat.budget > 0 ? Math.round((currentStat.spent / currentStat.budget) * 100) : 0}%</span>
+                      </div>
+                      <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                        <div 
+                          className={cn("h-full rounded-full transition-all duration-500", isOverspent ? "bg-rose-500" : "bg-emerald-400")} 
+                          style={{ width: `${Math.min(100, currentStat.budget > 0 ? (currentStat.spent / currentStat.budget) * 100 : 0)}%` }} 
+                        />
+                      </div>
+                    </div>
+
+                    {/* Today item list */}
+                    {(() => {
+                      const dayIncludedExpenses = expenses.filter(e => e.day === selectedBudgetDay && !e.isTransfer && !e.isSettlement && BUDGET_INCLUDED_CATEGORIES.includes(e.category));
+                      if (dayIncludedExpenses.length === 0) {
+                        return <p className="text-[9px] text-slate-400 italic text-center">今天没有日常预算范围内的消费 🍃</p>;
+                      }
+
+                      return (
+                        <div className="space-y-1.5 pt-1">
+                          <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">今日明细 ({dayIncludedExpenses.length}笔)</div>
+                          <div className="max-h-[80px] overflow-y-auto no-scrollbar space-y-1 pr-1">
+                            {dayIncludedExpenses.map(e => {
+                              const amtTwd = e.currency === 'TWD' ? e.amount : e.amount / exchangeRate;
+                              return (
+                                <div key={e.id} className="flex justify-between items-center text-[10px] bg-white/5 px-2 py-1 rounded">
+                                  <span className="truncate max-w-[130px] font-medium text-slate-200">
+                                    {getCategoryLabel(e.category).split(' ')[0]} {e.subject}
+                                  </span>
+                                  <span className="font-mono font-bold text-indigo-300">NT$ {Math.round(amtTwd)}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                );
+              })()}
+            </div>
             
             {/* Tag Spending Summary */}
 
@@ -665,7 +823,7 @@ export default function ExpensePanel() {
                 <h3 className="font-bold text-gray-800 flex items-center gap-2">
                   <Flame className="w-5 h-5 text-orange-500" /> 每日燃烧率 (TWD等值)
                 </h3>
-                <span className="text-[10px] font-bold text-gray-400">剔除预付/充值</span>
+                <span className="text-[10px] font-bold text-gray-400">已细化到全类目 (鼠标悬停看明细)</span>
               </div>
               
               <div className="flex-1 flex items-end justify-between gap-1 sm:gap-2">
@@ -683,10 +841,15 @@ export default function ExpensePanel() {
                       </div>
                       <div className="w-full max-w-[24px] bg-gray-50 rounded-t-md flex flex-col justify-end overflow-hidden relative" style={{ height: '100%' }}>
                         <div className="w-full flex flex-col justify-end" style={{ height: `${heightPct}%` }}>
-                          {(Object.entries(dayCats) as [string, number][]).sort((a,b)=>b[1]-a[1]).map(([groupName, amount]) => {
+                          {(Object.entries(dayCats) as [string, number][]).map(([catId, amount]) => {
                             const segmentPct = (amount / totalSpent) * 100;
                             return (
-                              <div key={groupName} style={{ height: `${segmentPct}%`, backgroundColor: getGroupColor(groupName) }} className="w-full" />
+                              <div 
+                                key={catId} 
+                                style={{ height: `${segmentPct}%`, backgroundColor: getCategoryColor(catId) }} 
+                                className="w-full" 
+                                title={`${getCategoryLabel(catId)}: NT$ ${Math.round(amount).toLocaleString()}`}
+                              />
                             );
                           })}
                         </div>
@@ -698,13 +861,63 @@ export default function ExpensePanel() {
               </div>
             </div>
             
-            <div className="flex flex-wrap gap-4 px-2 justify-center pt-2">
-              {CATEGORIES.map(g => (
-                <div key={g.group} className="flex items-center gap-1.5 text-[11px] font-bold text-gray-600">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getGroupColor(g.group) }} />
-                  {g.group}
+            {/* Expanded Multi-category Legend */}
+            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 space-y-3">
+              <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1">📊 全类目图例色块</div>
+              {CATEGORIES.map((g, idx) => (
+                <div key={idx} className="space-y-1.5">
+                  <div className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">{g.group}</div>
+                  <div className="flex flex-wrap gap-2">
+                    {g.items.map(item => (
+                      <div key={item.id} className="flex items-center gap-1.5 text-[9px] font-bold text-gray-600 bg-white border border-gray-100 px-2 py-0.5 rounded-lg shadow-sm">
+                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getCategoryColor(item.id) }} />
+                        <span>{item.icon} {item.label}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
+            </div>
+
+            {/* Daily Rollover Budget Table */}
+            <div className="bg-white rounded-2xl p-5 border border-gray-200 space-y-4">
+              <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                <Calculator className="w-4 h-4 text-indigo-500" /> 每日滚动预算追踪表 (Daily Rollover Audit)
+              </h3>
+              <div className="overflow-x-auto no-scrollbar border border-gray-100 rounded-xl">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-100">
+                      <th className="p-2.5 font-black text-gray-400 uppercase tracking-wider text-[9px]">天数</th>
+                      <th className="p-2.5 font-black text-gray-400 uppercase tracking-wider text-[9px]">起始可用额度</th>
+                      <th className="p-2.5 font-black text-gray-400 uppercase tracking-wider text-[9px]">日常已消费</th>
+                      <th className="p-2.5 font-black text-gray-400 uppercase tracking-wider text-[9px]">今日结余</th>
+                      <th className="p-2.5 font-black text-gray-400 uppercase tracking-wider text-[9px]">结转至明天</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50 font-medium">
+                    {dailyBudgetStats.map((dayStat) => {
+                      const isNeg = dayStat.remaining < 0;
+                      return (
+                        <tr key={dayStat.day} className="hover:bg-gray-50/50">
+                          <td className="p-2.5 font-bold text-gray-700">Day {dayStat.day}</td>
+                          <td className="p-2.5 text-gray-600 font-mono">NT$ {Math.round(dayStat.budget).toLocaleString()}</td>
+                          <td className="p-2.5 font-bold text-amber-600 font-mono">NT$ {Math.round(dayStat.spent).toLocaleString()}</td>
+                          <td className={cn("p-2.5 font-bold font-mono", isNeg ? "text-red-500" : "text-emerald-600")}>
+                            {dayStat.remaining >= 0 ? '+' : ''}{Math.round(dayStat.remaining).toLocaleString()}
+                          </td>
+                          <td className={cn("p-2.5 font-bold font-mono", isNeg ? "text-red-500" : "text-emerald-600")}>
+                            {dayStat.day === 10 ? '结清' : `NT$ ${Math.round(dayStat.rollover).toLocaleString()}`}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-[9px] text-gray-400 leading-relaxed font-medium">
+                *日常消费仅计算夜市、餐厅、甜点饮料、便利超商、Uber、公车、捷运、医疗及小额杂费。大笔消费如特产、3C、包包、机酒、高铁及门票不在此每日 NT$ 3,000 的滚动额度里扣除。
+              </p>
             </div>
 
             <div className="pt-4">

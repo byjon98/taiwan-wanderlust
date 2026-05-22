@@ -127,7 +127,7 @@ export const souvenirModules: InfoModule[] = [
   {
     id: 'skincare',
     name: '护肤 / 美妆',
-    desc: 'Dr. Wu、霓净思、面膜扫货、丝瓜水',
+    desc: 'Dr. Wu、霓净思、雪芙蘭美白乳、面膜扫货、丝瓜水',
     items: [
       { 
         n: '医美级 — Dr. Wu / Neogence', 
@@ -803,7 +803,8 @@ export const packingList: PackingCategory[] = [
       { text: '小潘凤凰酥裸装 (板桥)', note: '手提上机，不能托运' },
       { text: '微热山丘、许义鱼酥、茶池屋红茶' },
       { text: '家乐福扫货: 义美小泡芙、科学面' },
-      { text: 'GU 台湾款 (Q Square B2)' }
+      { text: 'GU 台湾款 (Q Square B2)' },
+      { text: '🌟 雪芙蘭 SUPER EX 美白身体乳 (330g)', note: '宝雅/康是美，等买一送一！约NT$100/瓶' }
     ]
   },
   {

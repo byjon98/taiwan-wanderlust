@@ -75,15 +75,15 @@ export default function InfoPanel() {
   });
 
   // Packing List State
-  const [userPackingList, setUserPackingList] = useFirestoreSync<StatefulPackingCategory[]>('packing', 'taiwan_trip_packing_v1', INITIAL_PACKING_LIST);
+  const [userPackingList, setUserPackingList] = useFirestoreSync<StatefulPackingCategory[]>('packing', 'taiwan_trip_packing_v2', INITIAL_PACKING_LIST);
   const [history, setHistory] = useState<StatefulPackingCategory[][]>([]);
   const [future, setFuture] = useState<StatefulPackingCategory[][]>([]);
   const [newPackingItems, setNewPackingItems] = useState<Record<number, string>>({});
   const [isPolicyOpen, setIsPolicyOpen] = useState(false);
 
   // Souvenirs & Groceries State synced via useFirestoreSync
-  const [souvenirDataRaw, setSouvenirData] = useFirestoreSync<InfoModule[]>('souvenirs', 'taiwan_trip_souvenirs_v1', INITIAL_SOUVENIRS);
-  const [groceryDataRaw, setGroceryData] = useFirestoreSync<InfoModule[]>('grocery', 'taiwan_trip_grocery_v1', INITIAL_GROCERIES);
+  const [souvenirDataRaw, setSouvenirData] = useFirestoreSync<InfoModule[]>('souvenirs', 'taiwan_trip_souvenirs_v2', INITIAL_SOUVENIRS);
+  const [groceryDataRaw, setGroceryData] = useFirestoreSync<InfoModule[]>('grocery', 'taiwan_trip_grocery_v2', INITIAL_GROCERIES);
 
   // Souvenirs & Groceries History states
   const [souvenirHistory, setSouvenirHistory] = useState<InfoModule[][]>([]);

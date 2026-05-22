@@ -152,7 +152,13 @@ export default function App() {
       });
       
       if (!response.ok) {
-        throw new Error(`API Error ${response.status}: ${response.statusText}`);
+        let errMsg = response.statusText;
+        try {
+          const errText = await response.text();
+          const errObj = JSON.parse(errText);
+          if (errObj.error && errObj.error.message) errMsg = errObj.error.message;
+        } catch (e) {}
+        throw new Error(`API Error ${response.status}: ${errMsg}`);
       }
       
       const data = await response.json();
@@ -235,7 +241,13 @@ export default function App() {
       });
       
       if (!response.ok) {
-        throw new Error(`API Error ${response.status}: ${response.statusText}`);
+        let errMsg = response.statusText;
+        try {
+          const errText = await response.text();
+          const errObj = JSON.parse(errText);
+          if (errObj.error && errObj.error.message) errMsg = errObj.error.message;
+        } catch (e) {}
+        throw new Error(`API Error ${response.status}: ${errMsg}`);
       }
       
       const data = await response.json();

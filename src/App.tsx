@@ -175,6 +175,92 @@ export default function App() {
     }
   };
 
+  const [isDiscoveringNearby, setIsDiscoveringNearby] = useState(false);
+
+  const handleDiscoverNearbyAI = async () => {
+    if (!nearbyFilter) {
+      toast.error('请先使用定位功能');
+      return;
+    }
+
+    let apiKey = localStorage.getItem('GEMINI_API_KEY');
+    if (!apiKey) {
+      apiKey = window.prompt("请输入您的 Gemini API Key 以使用 AI 探索功能（仅保存在本设备）：");
+      if (!apiKey) {
+        toast.error('需要 API Key 才能自动获取');
+        return;
+      }
+      localStorage.setItem('GEMINI_API_KEY', apiKey);
+    }
+
+    setIsDiscoveringNearby(true);
+    toast.info('AI 正在扫描附近隐藏好店，请稍候...');
+
+    const prompt = `作为专业的台湾旅游达人，用户当前的 GPS 坐标为纬度 ${nearbyFilter.lat}，经度 ${nearbyFilter.lng}。请根据你的知识库，推荐 3 家真实存在于这个位置 ${nearbyFilter.dist >= 1 ? nearbyFilter.dist + '公里' : (nearbyFilter.dist * 1000) + '米'} 范围内的优质店面或景点（最好是隐藏版美食，绝对不要推荐已经太泛滥的连锁店）。请严格按照以下 JSON 数组格式输出，不要输出任何其他文本或 markdown 标记：
+[
+  {
+    "n": "店名",
+    "f": "特色简述",
+    "do": "必做体验（一句话）",
+    "eat": "必吃/必买推荐（逗号分隔，如果没有可留空）",
+    "w": "避雷指南（如果没有可留空）",
+    "r": "网络评价摘要",
+    "tips": "实用提示",
+    "price": "cheap或mid或exp",
+    "zone": "所属区域",
+    "cuisine": "菜系/类型",
+    "hours": "营业时间",
+    "lat": 具体纬度数值,
+    "lng": 具体经度数值,
+    "tags": ["AI挖掘"]
+  }
+]`;
+
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }]
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      let rawJson = data.candidates[0].content.parts[0].text;
+      const jsonMatch = rawJson.match(/\[[\s\S]*\]/);
+      if (jsonMatch) rawJson = jsonMatch[0];
+      
+      const newItems = JSON.parse(rawJson);
+      
+      if (Array.isArray(newItems)) {
+        const itemsWithUid = newItems.map((item: any) => ({
+          ...item,
+          uid: 'custom_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+          s: 5,
+          t: item.cuisine ? '餐厅' : '景点'
+        }));
+        
+        setCustomStores(prev => [...prev, ...itemsWithUid]);
+        toast.success(`成功挖掘到 ${itemsWithUid.length} 家附近好店！`);
+      } else {
+        throw new Error("AI 返回格式错误");
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast.error('AI 请求失败: ' + e.message);
+      if (e.message.includes('API Error:')) {
+        localStorage.removeItem('GEMINI_API_KEY');
+        toast.error('API Key 似乎无效，已自动清除。');
+      }
+    } finally {
+      setIsDiscoveringNearby(false);
+    }
+  };
+
   const saveCustomStore = () => {
     try {
       let rawJson = newStoreJson;
@@ -1272,9 +1358,32 @@ export default function App() {
                     {!searchQuery && activeRegionId !== 'all' && <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest border border-gray-200 rounded px-1.5 py-0.5">{activeRegion?.day}</span>}
                   </div>
                   {nearbyFilter && (
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 border border-indigo-100 rounded-full text-indigo-700 text-xs font-bold mt-2 sm:mt-0 shadow-sm animate-in fade-in">
-                      <span>📍 正在显示附近 {nearbyFilter.dist >= 1 ? `${nearbyFilter.dist}km` : `${nearbyFilter.dist * 1000}m`} 内的地点</span>
-                      <button onClick={() => setNearbyFilter(null)} className="hover:bg-indigo-200 p-0.5 rounded-full transition-colors"><X className="w-3 h-3" /></button>
+                    <div className="flex flex-col gap-3 mt-2 sm:mt-0 w-full md:w-auto">
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 border border-indigo-100 rounded-full text-indigo-700 text-xs font-bold shadow-sm animate-in fade-in w-fit">
+                        <span>📍 正在显示附近 {nearbyFilter.dist >= 1 ? `${nearbyFilter.dist}km` : `${nearbyFilter.dist * 1000}m`} 内的地点</span>
+                        <button onClick={() => setNearbyFilter(null)} className="hover:bg-indigo-200 p-0.5 rounded-full transition-colors"><X className="w-3 h-3" /></button>
+                      </div>
+                      
+                      <div className="flex flex-col sm:flex-row gap-2 animate-in slide-in-from-top-2">
+                        <button 
+                          onClick={handleDiscoverNearbyAI}
+                          disabled={isDiscoveringNearby}
+                          className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-bold rounded-lg shadow-sm hover:shadow active:scale-95 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                        >
+                          <Sparkles className={cn("w-3.5 h-3.5", isDiscoveringNearby && "animate-spin")} />
+                          {isDiscoveringNearby ? "AI 正在挖掘..." : "✨ 让 AI 挖掘真实好店"}
+                        </button>
+                        
+                        <a 
+                          href={`https://www.google.com/maps/search/餐厅景点/@${nearbyFilter.lat},${nearbyFilter.lng},16z`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg shadow-sm hover:bg-gray-50 active:scale-95 transition-all"
+                        >
+                          <MapPin className="w-3.5 h-3.5 text-red-500" />
+                          🗺️ 打开 Google Maps 探索
+                        </a>
+                      </div>
                     </div>
                   )}
                   {!searchQuery && (
